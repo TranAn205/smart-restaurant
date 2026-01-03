@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables 
+.env
+.env.local
+.env.production
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings 
+.vscode/
+.idea/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Markdown docs 
+*.md
+!README.md
+!docs/*.md
+!docs/**/*.md
+
+backend/public/uploads/*
+!backend/public/uploads/.gitkeep
