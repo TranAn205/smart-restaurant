@@ -1,0 +1,125 @@
+[33m07c21a2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{0}: commit (amend): Merge pull request #10 from TranAn205/feature/cart-context
+[33mb9bdcfd[m HEAD@{1}: reset: moving to HEAD~1
+[33m05bf232[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{2}: commit (amend): Merge pull request #11 from TranAn205/feature/backend-orders-api
+[33m462f1f1[m HEAD@{3}: commit (amend): Merge pull request #11 from TranAn205/feature/backend-orders-api
+[33m340e8e3[m HEAD@{4}: pull: Fast-forward
+[33m21a703b[m HEAD@{5}: checkout: moving from feature/backend-orders-api to main
+[33m2cf7a97[m[33m ([m[1;31morigin/feature/backend-orders-api[m[33m, [m[1;32mfeature/backend-orders-api[m[33m)[m HEAD@{6}: commit (amend): feat(backend): Add order creation and tracking API
+[33m77f3e06[m HEAD@{7}: commit: feat(backend): Add order creation and tracking API
+[33m21a703b[m HEAD@{8}: checkout: moving from main to feature/backend-orders-api
+[33m21a703b[m HEAD@{9}: pull: Merge made by the 'ort' strategy.
+[33m34fefb9[m HEAD@{10}: commit (amend): Merge pull request #7 from TranAn205/feature/guest-menu-page
+[33m5603311[m HEAD@{11}: commit (amend): Merge pull request #7 from TranAn205/feature/guest-menu-page
+[33mc8dd709[m HEAD@{12}: pull: Fast-forward
+[33m045cc8b[m HEAD@{13}: checkout: moving from main to main
+[33m045cc8b[m HEAD@{14}: rebase (finish): returning to refs/heads/main
+[33m045cc8b[m HEAD@{15}: commit (amend): Merge pull request #5 from TranAn205/ui-core
+[33me3c2548[m HEAD@{16}: rebase (reset): 'main': Merge pull request #5 from TranAn205/ui-core
+[33m45fe3ff[m HEAD@{17}: rebase (reset): 'main'
+[33m8131880[m HEAD@{18}: commit (amend): Merge branch 'main' of https://github.com/TranAn205/smart-restaurant into ui-core
+[33md427884[m HEAD@{19}: rebase (pick): Merge branch 'main' of https://github.com/TranAn205/smart-restaurant into ui-core
+[33m3c06e98[m HEAD@{20}: commit (amend): feat(frontend): Add UI component library
+[33medc60b6[m HEAD@{21}: rebase (pick): feat(frontend): Add UI component library
+[33md3a24e7[m HEAD@{22}: rebase (reset): 'branch-point-2'
+[33m45fe3ff[m HEAD@{23}: commit (amend): Merge pull request #4 from TranAn205/feat(backend)-Add-public-menu-endpoint-for-guests
+[33m4d0adf1[m HEAD@{24}: rebase (reset): 'branch-point-4': Merge pull request #4 from TranAn205/feat(backend)-Add-public-menu-endpoint-for-guests
+[33mb03d007[m HEAD@{25}: rebase (reset): 'branch-point-4'
+[33md98ad4c[m HEAD@{26}: commit (amend): feat(backend): Add public menu endpoint for guests
+[33mc2e4ff5[m HEAD@{27}: rebase (pick): feat(backend): Add public menu endpoint for guests
+[33mb03d007[m HEAD@{28}: commit (amend): Merge pull request #3 from TranAn205/feat(backend)-Add-menu-CRUD-API-with-controllers
+[33m51489f9[m HEAD@{29}: rebase (reset): 'branch-point-3': Merge pull request #3 from TranAn205/feat(backend)-Add-menu-CRUD-API-with-controllers
+[33ma4ea607[m HEAD@{30}: rebase (reset): 'branch-point-3'
+[33me3e105e[m HEAD@{31}: commit (amend): feat(backend): Add menu CRUD API with controllers
+[33mbe55a7f[m HEAD@{32}: rebase (pick): feat(backend): Add menu CRUD API with controllers
+[33ma4ea607[m HEAD@{33}: commit (amend): Merge pull request #2 from TranAn205/feat(backend)-Add-authentication-routes-and-controller
+[33mfea331c[m HEAD@{34}: rebase (reset): 'branch-point-2': Merge pull request #2 from TranAn205/feat(backend)-Add-authentication-routes-and-controller
+[33md3a24e7[m HEAD@{35}: rebase (reset): 'branch-point-2'
+[33m810cf96[m HEAD@{36}: commit (amend): feat(backend): Add authentication routes and controller
+[33me68c142[m HEAD@{37}: rebase (pick): feat(backend): Add authentication routes and controller
+[33md3a24e7[m HEAD@{38}: commit (amend): Merge pull request #1 from TranAn205/feat(backend)-Add-authentication-middleware
+[33m5c073c1[m HEAD@{39}: rebase (reset): 'branch-point': Merge pull request #1 from TranAn205/feat(backend)-Add-authentication-middleware
+[33mcdb5cc8[m HEAD@{40}: rebase (reset): 'branch-point'
+[33md754a48[m HEAD@{41}: commit (amend): feat(backend): Add authentication middleware
+[33md31317f[m HEAD@{42}: rebase (pick): feat(backend): Add authentication middleware
+[33mcdb5cc8[m HEAD@{43}: commit (amend): docs: Add project documentation structure
+[33mdb59b37[m HEAD@{44}: rebase (pick): docs: Add project documentation structure
+[33m2ccf8fa[m HEAD@{45}: commit (amend): feat(frontend): Initialize NextJS project
+[33mad43f16[m HEAD@{46}: rebase (pick): feat(frontend): Initialize NextJS project
+[33mf249b91[m HEAD@{47}: commit (amend): feat(db): Add database schema and migrations
+[33m7d4a367[m HEAD@{48}: rebase (pick): feat(db): Add database schema and migrations
+[33me6a6ac6[m HEAD@{49}: commit (amend): feat(backend): Add Express server skeleton
+[33m656d56e[m HEAD@{50}: rebase (pick): feat(backend): Add Express server skeleton
+[33m380c3cb[m HEAD@{51}: commit (amend): chore: Initialize project structure
+[33md865883[m HEAD@{52}: rebase: fast-forward
+[33mb025d55[m HEAD@{53}: rebase (start): checkout b025d559d14b9a42d49cfca86787ce9b990d543d
+[33mac90387[m HEAD@{54}: rebase (finish): returning to refs/heads/main
+[33mac90387[m HEAD@{55}: commit (amend): Merge pull request #5 from TranAn205/ui-core
+[33mc97121b[m HEAD@{56}: rebase (reset): 'main': Merge pull request #5 from TranAn205/ui-core
+[33m03bb1b3[m HEAD@{57}: rebase (reset): 'main'
+[33ma16b551[m HEAD@{58}: commit (amend): Merge branch 'main' of https://github.com/TranAn205/smart-restaurant into ui-core
+[33m913185a[m HEAD@{59}: rebase (pick): Merge branch 'main' of https://github.com/TranAn205/smart-restaurant into ui-core
+[33m0e6d1ea[m HEAD@{60}: commit (amend): feat(frontend): Add UI component library
+[33m634a623[m HEAD@{61}: rebase (pick): feat(frontend): Add UI component library
+[33mf4a899f[m HEAD@{62}: rebase (reset): 'branch-point-2'
+[33m03bb1b3[m HEAD@{63}: commit (amend): Merge pull request #4 from TranAn205/feat(backend)-Add-public-menu-endpoint-for-guests
+[33me5b76cc[m HEAD@{64}: rebase (reset): 'branch-point-4': Merge pull request #4 from TranAn205/feat(backend)-Add-public-menu-endpoint-for-guests
+[33mbb8815c[m HEAD@{65}: rebase (reset): 'branch-point-4'
+[33m6aa12ba[m HEAD@{66}: commit (amend): feat(backend): Add public menu endpoint for guests
+[33m609a1a7[m HEAD@{67}: rebase (pick): feat(backend): Add public menu endpoint for guests
+[33mbb8815c[m HEAD@{68}: commit (amend): Merge pull request #3 from TranAn205/feat(backend)-Add-menu-CRUD-API-with-controllers
+[33m75989fd[m HEAD@{69}: rebase (reset): 'branch-point-3': Merge pull request #3 from TranAn205/feat(backend)-Add-menu-CRUD-API-with-controllers
+[33m7a9d1fd[m HEAD@{70}: rebase (reset): 'branch-point-3'
+[33m34f5444[m HEAD@{71}: commit (amend): feat(backend): Add menu CRUD API with controllers
+[33me3b5dcb[m HEAD@{72}: rebase (pick): feat(backend): Add menu CRUD API with controllers
+[33m7a9d1fd[m HEAD@{73}: commit (amend): Merge pull request #2 from TranAn205/feat(backend)-Add-authentication-routes-and-controller
+[33mc793e25[m HEAD@{74}: rebase (reset): 'branch-point-2': Merge pull request #2 from TranAn205/feat(backend)-Add-authentication-routes-and-controller
+[33mf4a899f[m HEAD@{75}: rebase (reset): 'branch-point-2'
+[33m0839eec[m HEAD@{76}: commit (amend): feat(backend): Add authentication routes and controller
+[33m12a7bdf[m HEAD@{77}: rebase (pick): feat(backend): Add authentication routes and controller
+[33mf4a899f[m HEAD@{78}: commit (amend): Merge pull request #1 from TranAn205/feat(backend)-Add-authentication-middleware
+[33m05def37[m HEAD@{79}: rebase (reset): 'branch-point': Merge pull request #1 from TranAn205/feat(backend)-Add-authentication-middleware
+[33md8552be[m HEAD@{80}: rebase (reset): 'branch-point'
+[33m1401592[m HEAD@{81}: commit (amend): feat(backend): Add authentication middleware
+[33m2217a7d[m HEAD@{82}: rebase (pick): feat(backend): Add authentication middleware
+[33md8552be[m HEAD@{83}: commit (amend): docs: Add project documentation structure
+[33mb7dda1c[m HEAD@{84}: rebase (pick): docs: Add project documentation structure
+[33mca03ab8[m HEAD@{85}: commit (amend): feat(frontend): Initialize NextJS project
+[33mf115020[m HEAD@{86}: rebase (pick): feat(frontend): Initialize NextJS project
+[33m8ccecf1[m HEAD@{87}: commit (amend): feat(db): Add database schema and migrations
+[33m5138e86[m HEAD@{88}: rebase (pick): feat(db): Add database schema and migrations
+[33md765248[m HEAD@{89}: commit (amend): feat(backend): Add Express server skeleton
+[33meef8056[m HEAD@{90}: rebase (pick): feat(backend): Add Express server skeleton
+[33mc6a71b8[m HEAD@{91}: commit (amend): chore: Initialize project structure
+[33md865883[m HEAD@{92}: rebase: fast-forward
+[33m099283f[m HEAD@{93}: rebase (start): checkout 099283f44742185b5e6d07c9098e7652469a7573
+[33m4210029[m[33m ([m[1;31morigin/feat(backend)-Add-order-creation-and-tracking-API[m[33m, [m[1;32mbackup-history[m[33m)[m HEAD@{94}: rebase (finish): returning to refs/heads/main
+[33m4210029[m[33m ([m[1;31morigin/feat(backend)-Add-order-creation-and-tracking-API[m[33m, [m[1;32mbackup-history[m[33m)[m HEAD@{95}: rebase: fast-forward
+[33mba758f1[m HEAD@{96}: rebase (reset): 'main'
+[33mf40ccd1[m[33m ([m[1;31morigin/ui-core[m[33m, [m[1;32mui-core[m[33m)[m HEAD@{97}: rebase: fast-forward
+[33m74b4200[m HEAD@{98}: rebase: fast-forward
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{99}: rebase (reset): 'branch-point-2'
+[33mba758f1[m HEAD@{100}: rebase: fast-forward
+[33m11a100c[m HEAD@{101}: rebase (reset): 'branch-point-4'
+[33m7e11b21[m HEAD@{102}: rebase: fast-forward
+[33m11a100c[m HEAD@{103}: rebase: fast-forward
+[33m1978284[m HEAD@{104}: rebase (reset): 'branch-point-3'
+[33m16c021e[m HEAD@{105}: rebase: fast-forward
+[33m1978284[m HEAD@{106}: rebase: fast-forward
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{107}: rebase (reset): 'branch-point-2'
+[33md6786d9[m HEAD@{108}: rebase: fast-forward
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{109}: rebase: fast-forward
+[33m6bbaa5e[m HEAD@{110}: rebase (reset): 'branch-point'
+[33mfaecdce[m HEAD@{111}: rebase: fast-forward
+[33m6bbaa5e[m HEAD@{112}: rebase: fast-forward
+[33m5cb7c80[m HEAD@{113}: rebase: fast-forward
+[33m748f076[m HEAD@{114}: rebase: fast-forward
+[33ma60e226[m HEAD@{115}: rebase: fast-forward
+[33md865883[m HEAD@{116}: rebase: fast-forward
+[33m867b027[m HEAD@{117}: rebase (start): checkout 867b027dabf51dcf51ce47d6f2b650ae771c1270
+[33m4210029[m[33m ([m[1;31morigin/feat(backend)-Add-order-creation-and-tracking-API[m[33m, [m[1;32mbackup-history[m[33m)[m HEAD@{118}: pull: Fast-forward
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{119}: checkout: moving from ui-core to main
+[33mf40ccd1[m[33m ([m[1;31morigin/ui-core[m[33m, [m[1;32mui-core[m[33m)[m HEAD@{120}: pull origin main: Merge made by the 'ort' strategy.
+[33m74b4200[m HEAD@{121}: commit: feat(frontend): Add UI component library
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{122}: checkout: moving from main to ui-core
+[33m8eb8900[m[33m ([m[1;31morigin/feat(backend)-Add-authentication-routes-and-controller[m[33m)[m HEAD@{123}: pull: Fast-forward
+[33m6bbaa5e[m HEAD@{124}: clone: from https://github.com/TranAn205/smart-restaurant
