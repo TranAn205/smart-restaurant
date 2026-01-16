@@ -51,10 +51,26 @@ const requireCustomer = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    if (decoded.type !== 'customer') {
+    
+    // Support both token types:
+    // 1. customerAuth token: { customerId, type: 'customer' }
+    // 2. auth.js token: { userId, email, role: 'guest' }
+    if (decoded.type === 'customer') {
+      req.customer = { 
+        ...decoded, 
+        userId: decoded.customerId // Map customerId -> userId for consistency
+      };
+    } else if (decoded.userId && decoded.role === 'guest') {
+      req.customer = {
+        userId: decoded.userId,
+        customerId: decoded.userId, // Also set customerId for backward compat
+        email: decoded.email,
+        role: decoded.role
+      };
+    } else {
       return res.status(403).json({ message: 'Customer access only' });
     }
-    req.customer = decoded; // { customerId, type: 'customer' }
+    
     next();
   } catch (err) {
     return res.status(403).json({ message: 'Invalid or expired token' });
