@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Minus, Plus, Star, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Minus, Plus, Star, X, MessageSquare, Loader2 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,6 +10,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import type { MenuItem, ModifierOption } from "@/lib/menu-data"
 import { formatPrice } from "@/lib/menu-data"
+import { reviewsAPI } from "@/lib/api"
+
+interface Review {
+  id: string;
+  customer_name: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
 
 interface ItemDetailModalProps {
   item: MenuItem | null
@@ -22,6 +31,19 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
   const [quantity, setQuantity] = useState(1)
   const [selectedModifiers, setSelectedModifiers] = useState<ModifierOption[]>([])
   const [notes, setNotes] = useState("")
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loadingReviews, setLoadingReviews] = useState(false)
+
+  // Fetch reviews when item changes
+  useEffect(() => {
+    if (item && isOpen) {
+      setLoadingReviews(true)
+      reviewsAPI.getItemReviews(item.id)
+        .then((res) => setReviews(res.data || res || []))
+        .catch(() => setReviews([]))
+        .finally(() => setLoadingReviews(false))
+    }
+  }, [item, isOpen])
 
   if (!isOpen || !item) return null
 
@@ -135,6 +157,55 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
               </div>
             </div>
           ))}
+
+          {/* Customer Reviews Section */}
+          <div className="mt-6 border-t border-border pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <MessageSquare className="h-5 w-5 text-primary" />
+              <h3 className="font-medium text-card-foreground">
+                Đánh giá từ khách hàng ({reviews.length})
+              </h3>
+            </div>
+            
+            {loadingReviews ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : reviews.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">
+                Chưa có đánh giá nào cho món này
+              </p>
+            ) : (
+              <div className="space-y-3 max-h-48 overflow-y-auto">
+                {reviews.slice(0, 5).map((review) => (
+                  <div key={review.id} className="border-b border-border/50 pb-3 last:border-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm text-card-foreground">
+                        {review.customer_name || "Khách ẩn danh"}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-3 w-3 ${
+                              star <= review.rating
+                                ? "fill-warning text-warning"
+                                : "text-muted-foreground"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {review.comment}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="mt-4">
             <h3 className="font-medium text-card-foreground">Ghi chú</h3>

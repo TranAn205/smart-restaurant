@@ -57,8 +57,15 @@ exports.acceptOrder = async (req, res, next) => {
         return res.status(400).json({ message: 'Can only accept pending orders' });
     }
 
+    // Update order status
     const { rows } = await db.query(
       "UPDATE orders SET status = 'accepted', updated_at = NOW() WHERE id = $1 RETURNING *",
+      [id]
+    );
+
+    // IMPORTANT: Also update all order_items to 'accepted' so kitchen can see them
+    await db.query(
+      "UPDATE order_items SET status = 'accepted' WHERE order_id = $1 AND status = 'pending'",
       [id]
     );
 

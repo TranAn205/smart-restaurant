@@ -517,9 +517,9 @@ export const adminAPI = {
         pagination: { total: number; page: number; limit: number };
       }>(`/admin/menu/items${queryStr ? `?${queryStr}` : ""}`);
     },
-    getById: (id: number) => fetchAPI<any>(`/admin/menu/items/${id}`),
+    getById: (id: string) => fetchAPI<any>(`/admin/menu/items/${id}`),
     create: (data: {
-      category_id: number;
+      category_id: string;
       name: string;
       description?: string;
       price: number;
@@ -532,9 +532,9 @@ export const adminAPI = {
         body: JSON.stringify(data),
       }),
     update: (
-      id: number,
+      id: string,
       data: {
-        category_id?: number;
+        category_id?: string;
         name?: string;
         description?: string;
         price?: number;
@@ -547,15 +547,15 @@ export const adminAPI = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
-    delete: (id: number) =>
+    delete: (id: string) =>
       fetchAPI(`/admin/menu/items/${id}`, { method: "DELETE" }),
-    updateStatus: (id: number, status: string) =>
+    updateStatus: (id: string, status: string) =>
       fetchAPI<any>(`/admin/menu/items/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
     // Photo management
-    addPhotosFromUrl: (id: number, urls: string[]) =>
+    addPhotosFromUrl: (id: string, urls: string[]) =>
       fetchAPI<{ message: string; data: any[] }>(
         `/admin/menu/items/${id}/photos/from-url`,
         {
@@ -563,7 +563,7 @@ export const adminAPI = {
           body: JSON.stringify({ urls }),
         }
       ),
-    uploadPhotos: async (id: number, files: File[]) => {
+    uploadPhotos: async (id: string, files: File[]) => {
       const formData = new FormData();
       files.forEach((file) => formData.append("photos", file));
 
@@ -585,7 +585,7 @@ export const adminAPI = {
       }
       return response.json();
     },
-    deletePhoto: (itemId: number, photoId: number) =>
+    deletePhoto: (itemId: string, photoId: string) =>
       fetchAPI(`/admin/menu/items/${itemId}/photos/${photoId}`, {
         method: "DELETE",
       }),

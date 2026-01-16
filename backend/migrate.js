@@ -350,7 +350,7 @@ async function migrate() {
       [tables[1].id]
     );
     await client.query(
-      `INSERT INTO order_items (order_id, menu_item_id, quantity, price_per_unit, total_price, status) VALUES ($1, $2, 1, 120000, 120000, 'pending')`,
+      `INSERT INTO order_items (order_id, menu_item_id, quantity, price_per_unit, total_price, status) VALUES ($1, $2, 1, 120000, 120000, 'accepted')`,
       [p2.rows[0].id, items.find((i) => i.name.includes("Mỳ")).id]
     );
 
