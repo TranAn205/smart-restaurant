@@ -17,12 +17,20 @@ import {
   CheckCircle,
   ChefHat,
   Eye,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw,
+  Plus,
+  MonitorPlay,
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI } from "@/lib/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Order {
   id: number;
@@ -97,8 +105,9 @@ export default function AdminDashboardPage() {
   });
   const [pendingCount, setPendingCount] = useState(0);
   const [preparingCount, setPreparingCount] = useState(0);
+  const [topItems, setTopItems] = useState<Array<{name: string; total_sold: string; revenue: string}>>([]);
+  const [dailyRevenue, setDailyRevenue] = useState<Array<{date: string; revenue: string}>>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -129,11 +138,22 @@ export default function AdminDashboardPage() {
       ).length;
       setPendingCount(pending);
       setPreparingCount(preparing);
+
+      // Fetch top selling items
+      try {
+        const topItemsData = await adminAPI.reports.getTopItems();
+        setTopItems(topItemsData.slice(0, 5));
+      } catch (e) { console.error(e); }
+
+      // Fetch daily revenue
+      try {
+        const dailyData = await adminAPI.reports.getDailyReport();
+        setDailyRevenue(dailyData.slice(0, 7).reverse());
+      } catch (e) { console.error(e); }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -144,11 +164,6 @@ export default function AdminDashboardPage() {
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-  };
 
   const statsDisplay = [
     {
@@ -183,17 +198,27 @@ export default function AdminDashboardPage() {
               Welcome back! Here&apos;s what&apos;s happening today.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href="/kitchen">
+                <MonitorPlay className="mr-2 h-4 w-4" />
+                Open KDS
+              </a>
+            </Button>
+            <Button
+              size="sm"
+              asChild
+            >
+              <a href="/admin/orders">
+                <Plus className="mr-2 h-4 w-4" />
+                New Order
+              </a>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -381,6 +406,97 @@ export default function AdminDashboardPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Chart and Top Items */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          {/* Revenue Chart (Line Chart) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Doanh thu 7 ngày qua</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dailyRevenue.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>Chưa có dữ liệu doanh thu</p>
+                </div>
+              ) : (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyRevenue.map((day) => ({
+                        date: new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+                        revenue: parseFloat(day.revenue) || 0,
+                      }))}
+                      margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [formatPrice(value), "Doanh thu"]}
+                        labelStyle={{ color: "var(--foreground)" }}
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Selling Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topItems.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>Chưa có dữ liệu bán hàng</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {topItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between rounded-lg border border-border p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                          <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-card-foreground">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.total_sold} đã bán</p>
+                        </div>
+                      </div>
+                      <span className="font-medium text-success">
+                        {formatPrice(parseFloat(item.revenue))}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>

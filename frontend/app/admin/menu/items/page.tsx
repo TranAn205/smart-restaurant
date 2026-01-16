@@ -54,6 +54,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  ArrowUpDown,
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI, API_BASE_URL } from "@/lib/api";
@@ -111,6 +112,7 @@ export default function MenuItemsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -178,6 +180,23 @@ export default function MenuItemsPage() {
     const matchesStatus =
       filterStatus === "all" || item.status === filterStatus;
     return matchesSearch && matchesCategory && matchesStatus;
+  });
+
+  // Sort items
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    switch (sortBy) {
+      case "price_high":
+        return b.price - a.price;
+      case "price_low":
+        return a.price - b.price;
+      case "name_asc":
+        return a.name.localeCompare(b.name);
+      case "name_desc":
+        return b.name.localeCompare(a.name);
+      case "newest":
+      default:
+        return 0; // Keep original order (newest first from API)
+    }
   });
 
   const resetForm = () => {
@@ -811,6 +830,19 @@ export default function MenuItemsPage() {
                   <SelectItem value="sold_out">Sold Out</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-44">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Mới nhất</SelectItem>
+                  <SelectItem value="price_high">Giá cao → thấp</SelectItem>
+                  <SelectItem value="price_low">Giá thấp → cao</SelectItem>
+                  <SelectItem value="name_asc">Tên A-Z</SelectItem>
+                  <SelectItem value="name_desc">Tên Z-A</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="flex gap-1 rounded-lg border border-border p-1">
                 <Button
                   variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -848,7 +880,7 @@ export default function MenuItemsPage() {
         ) : viewMode === "grid" ? (
           /* Items Grid */
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredItems.map((item) => {
+            {sortedItems.map((item) => {
               const config =
                 statusConfig[item.status] || statusConfig.available;
               return (
@@ -1009,7 +1041,7 @@ export default function MenuItemsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredItems.map((item) => {
+                  {sortedItems.map((item) => {
                     const config =
                       statusConfig[item.status as keyof typeof statusConfig] ||
                       statusConfig.available;

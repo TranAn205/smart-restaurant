@@ -17,6 +17,8 @@ import {
   X,
   ChefHat,
   Lock,
+  ShoppingBag,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,10 +29,12 @@ interface AdminLayoutProps {
 
 const sidebarItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/orders", icon: ShoppingBag, label: "Orders" },
   { href: "/admin/menu/items", icon: UtensilsCrossed, label: "Menu Items" },
   { href: "/admin/menu/categories", icon: FolderOpen, label: "Categories" },
   { href: "/admin/menu/modifiers", icon: Sliders, label: "Modifiers" },
   { href: "/admin/tables", icon: Armchair, label: "Tables" },
+  { href: "/admin/staff", icon: Users, label: "Staff" },
   { href: "/admin/reports", icon: BarChart3, label: "Reports" },
 ];
 
@@ -72,7 +76,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground transition-transform duration-300 lg:static lg:translate-x-0",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -95,7 +99,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-4">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-4">
           {sidebarItems.map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + "/");

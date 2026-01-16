@@ -24,4 +24,10 @@ router.get('/history', requireAuth, usersController.getHistory);
 // GET /api/users/admins - List admins (admin only)
 router.get('/admins', requireAuth, requireRole('admin'), usersController.listAdmins);
 
+// GET /api/users/staff - List staff waiter/kitchen (admin only)
+router.get('/staff', requireAuth, requireRole('admin'), usersController.listStaff);
+
+// PATCH /api/users/:id/status - Update user status (admin only)
+router.patch('/:id/status', requireAuth, requireRole('admin'), usersController.updateStatus);
+
 module.exports = router;

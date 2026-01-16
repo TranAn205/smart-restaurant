@@ -671,6 +671,8 @@ export const adminAPI = {
     },
     getRecent: (limit: number = 10) =>
       fetchAPI<any[]>(`/orders?limit=${limit}`),
+    getById: (id: string) =>
+      fetchAPI<any>(`/orders/${id}`),
   },
 };
 

@@ -9,16 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar,
-  FileSpreadsheet,
-  FileText,
   TrendingUp,
   Package,
   DollarSign,
   RefreshCw,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 interface DailyReport {
   date: string;
@@ -109,13 +112,138 @@ export default function ReportsPage() {
     }
   }, [startDate, endDate]);
 
+  // Export to PDF
   const handleExportPDF = () => {
-    toast({ title: "Export PDF", description: "Exporting PDF report..." });
+    try {
+      const doc = new jsPDF();
+      
+      // Helper to remove Vietnamese diacritics for PDF compatibility
+      const removeVietnamese = (str: string) => {
+        return str
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D");
+      };
+
+      // PDF-safe price formatter (no Unicode ₫ symbol)
+      const pdfPrice = (value: number) => {
+        return new Intl.NumberFormat("en-US").format(value) + " VND";
+      };
+      
+      // Title
+      doc.setFontSize(18);
+      doc.text("Bao cao Doanh thu", 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Tu: ${startDate} - Den: ${endDate}`, 14, 30);
+      
+      // Summary
+      doc.setFontSize(12);
+      doc.text(`Tong doanh thu: ${pdfPrice(totalRevenue)}`, 14, 42);
+      doc.text(`Tong don hang: ${totalOrders}`, 14, 50);
+      doc.text(`Gia tri trung binh: ${pdfPrice(avgOrderValue)}`, 14, 58);
+      
+      // Daily Revenue Table
+      if (dailyReports.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Doanh thu theo ngay", 14, 72);
+        
+        autoTable(doc, {
+          startY: 76,
+          head: [["Ngay", "So don", "Doanh thu"]],
+          body: dailyReports.map((day) => [
+            day.date.split("T")[0], // Simple date format YYYY-MM-DD
+            day.total_orders,
+            pdfPrice(parseFloat(day.revenue)),
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [249, 115, 22] },
+        });
+      }
+      
+      // Top Items Table
+      if (topItems.length > 0) {
+        const finalY = (doc as any).lastAutoTable?.finalY || 100;
+        doc.setFontSize(14);
+        doc.text("Mon ban chay", 14, finalY + 15);
+        
+        autoTable(doc, {
+          startY: finalY + 19,
+          head: [["#", "Ten mon", "So luong", "Doanh thu"]],
+          body: topItems.map((item, idx) => [
+            idx + 1,
+            removeVietnamese(item.name),
+            item.total_sold,
+            pdfPrice(parseFloat(item.revenue)),
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [249, 115, 22] },
+        });
+      }
+      
+      doc.save(`bao-cao-${startDate}-${endDate}.pdf`);
+      toast({ title: "Thanh cong", description: "Da xuat file PDF" });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({ title: "Loi", description: "Khong the xuat PDF", variant: "destructive" });
+    }
   };
 
+  // Export to Excel
   const handleExportExcel = () => {
-    toast({ title: "Export Excel", description: "Exporting Excel report..." });
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ["BÁO CÁO DOANH THU"],
+        [`Từ: ${startDate}`, `Đến: ${endDate}`],
+        [],
+        ["Tổng doanh thu", totalRevenue],
+        ["Tổng đơn hàng", totalOrders],
+        ["Giá trị trung bình", avgOrderValue],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
+      
+      // Daily Revenue sheet
+      if (dailyReports.length > 0) {
+        const dailyData = [
+          ["Ngày", "Số đơn hàng", "Doanh thu"],
+          ...dailyReports.map((day) => [
+            new Date(day.date).toLocaleDateString("vi-VN"),
+            parseInt(day.total_orders),
+            parseFloat(day.revenue),
+          ]),
+        ];
+        const wsDaily = XLSX.utils.aoa_to_sheet(dailyData);
+        XLSX.utils.book_append_sheet(wb, wsDaily, "Doanh thu theo ngày");
+      }
+      
+      // Top Items sheet
+      if (topItems.length > 0) {
+        const topData = [
+          ["STT", "Tên món", "Số lượng bán", "Doanh thu"],
+          ...topItems.map((item, idx) => [
+            idx + 1,
+            item.name,
+            parseInt(item.total_sold),
+            parseFloat(item.revenue),
+          ]),
+        ];
+        const wsTop = XLSX.utils.aoa_to_sheet(topData);
+        XLSX.utils.book_append_sheet(wb, wsTop, "Món bán chạy");
+      }
+      
+      XLSX.writeFile(wb, `bao-cao-${startDate}-${endDate}.xlsx`);
+      toast({ title: "Thành công", description: "Đã xuất file Excel" });
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast({ title: "Lỗi", description: "Không thể xuất Excel", variant: "destructive" });
+    }
   };
+
+
 
   return (
     <AdminLayout>
@@ -137,15 +265,15 @@ export default function ReportsPage() {
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
               />
-              Refresh
+              Làm mới
             </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
+            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={loading}>
               <FileText className="mr-2 h-4 w-4" />
-              Export PDF
+              Xuất PDF
             </Button>
-            <Button variant="outline" onClick={handleExportExcel}>
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={loading}>
               <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Export Excel
+              Xuất Excel
             </Button>
           </div>
         </div>
@@ -329,26 +457,35 @@ export default function ReportsPage() {
                 </div>
               ) : dailyReports.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  No data available for selected period
+                  Không có dữ liệu trong khoảng thời gian này
                 </p>
               ) : (
                 <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {dailyReports.slice(0, 10).map((day) => (
-                    <div
-                      key={day.date}
-                      className="flex items-center justify-between border-b border-border pb-2"
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString("vi-VN")}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {day.total_orders} orders
-                      </span>
-                      <span className="font-medium text-card-foreground">
-                        {formatPrice(parseFloat(day.revenue))}
-                      </span>
-                    </div>
-                  ))}
+                  {dailyReports.slice(0, 10).map((day) => {
+                    const maxRevenue = Math.max(...dailyReports.map(d => parseFloat(d.revenue) || 0));
+                    const revenue = parseFloat(day.revenue) || 0;
+                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
+                    
+                    return (
+                      <div
+                        key={day.date}
+                        className="flex items-center gap-3"
+                      >
+                        <span className="w-20 text-sm text-muted-foreground">
+                          {new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                        </span>
+                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="w-20 text-sm font-medium text-right">
+                          {formatPrice(revenue)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

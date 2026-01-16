@@ -3,19 +3,19 @@
 ## Team Structure
 
 ```
-                ┌─────────────────┐
-                │     Dev A       │
-                │   Team Lead     │
-                │  FE Customer    │
-                └────────┬────────┘
-                         │
-        ┌────────────────┴────────────────┐
-        │                                 │
-┌───────┴───────┐                 ┌───────┴───────┐
-│    Dev B      │                 │    Dev C      │
-│   Backend     │                 │   FE Admin    │
-│    Infra      │                 │     QA        │
-└───────────────┘                 └───────────────┘
+                ┌─────────────────────────┐
+                │   Nguyễn Lê Thế Vinh    │
+                │       Team Lead         │
+                │     FE Customer         │
+                └───────────┬─────────────┘
+                            │
+         ┌──────────────────┴──────────────────┐
+         │                                     │
+┌────────┴────────┐                 ┌──────────┴────────┐
+│  Trần Thanh An  │                 │ Nguyễn Thị Á. Ngọc│
+│     Backend     │                 │     FE Admin      │
+│      Infra      │                 │        QA         │
+└─────────────────┘                 └───────────────────┘
 ```
 
 ---
@@ -24,9 +24,9 @@
 
 | Member | Student ID | Role         | Primary Focus                     | Git Username  |
 | ------ | ---------- | ------------ | --------------------------------- | ------------- |
-| Dev A  | \<ID1\>    | Team Lead    | FE Customer, Demo, Coordination   | \<username1\> |
-| Dev B  | \<ID2\>    | Backend Lead | APIs, Socket.IO, Database, Deploy | \<username2\> |
-| Dev C  | \<ID3\>    | FE Admin/QA  | Admin UI, KDS, Testing            | \<username3\> |
+| Nguyễn Lê Thế Vinh | 23120190 | Team Lead    | FE Customer, Demo, Coordination   | Zinthw |
+| Trần Thanh An | 23120017 | Backend Lead | APIs, Socket.IO, Database, Deploy | Gaaus56 |
+| Nguyễn Thị Ánh Ngọc | 23120061 | FE Admin/QA  | Admin UI, KDS, Testing            | angquoc |
 
 ---
 
@@ -37,7 +37,7 @@
 > **C** = Consulted (Được tham vấn)  
 > **I** = Informed (Được thông báo)
 
-| Task/Activity              | Dev A | Dev B | Dev C |
+| Task/Activity              | Vinh | An | Ngọc |
 | -------------------------- | ----- | ----- | ----- |
 | **Project Management**     |
 | Sprint planning            | R/A   | C     | C     |
@@ -112,12 +112,12 @@ Issue/Blocker → Daily Standup → Team Discussion → Teacher (if needed)
 
 ## Contact Information
 
-| Member | Email     | Phone     | Available Hours |
-| ------ | --------- | --------- | --------------- |
-| Dev A  | \<email\> | \<phone\> | 9AM - 10PM      |
-| Dev B  | \<email\> | \<phone\> | 9AM - 10PM      |
-| Dev C  | \<email\> | \<phone\> | 9AM - 10PM      |
+| Member | Email | GitHub | Available Hours |
+| ------ | ----- | ------ | --------------- |
+| Nguyễn Lê Thế Vinh | 23120190@student.hcmus.edu.vn | [Zinthw](https://github.com/Zinthw) | 9AM - 10PM |
+| Trần Thanh An | 23120017@student.hcmus.edu.vn | [Gaaus56](https://github.com/Gaaus56) | 9AM - 10PM |
+| Nguyễn Thị Ánh Ngọc | 23120061@student.hcmus.edu.vn | [angquoc](https://github.com/angquoc) | 9AM - 10PM |
 
 ---
 
-_Document Version: 1.0 | Last Updated: 03/01/2026_
+_Document Version: 1.1 | Last Updated: 16/01/2026_

@@ -99,3 +99,38 @@ exports.listAdmins = async (req, res, next) => {
         res.json(rows);
     } catch(err) { next(err); }
 };
+
+/**
+ * GET /api/users/staff
+ * List all staff (waiter/kitchen) for admin
+ */
+exports.listStaff = async (req, res, next) => {
+    try {
+        const { rows } = await db.query(`
+            SELECT id, email, full_name, role, status, created_at 
+            FROM users 
+            WHERE role IN ('waiter', 'kitchen')
+            ORDER BY created_at DESC
+        `);
+        res.json(rows);
+    } catch(err) { next(err); }
+};
+
+/**
+ * PATCH /api/users/:id/status
+ * Update user status (active/inactive)
+ */
+exports.updateStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        const { rows } = await db.query(
+            "UPDATE users SET status = $1 WHERE id = $2 RETURNING id, status",
+            [status, id]
+        );
+        
+        if (!rows[0]) return res.status(404).json({ message: "User not found" });
+        res.json({ message: "Status updated", user: rows[0] });
+    } catch(err) { next(err); }
+};

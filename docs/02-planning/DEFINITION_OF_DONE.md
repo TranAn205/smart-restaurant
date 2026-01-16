@@ -1,31 +1,41 @@
 # Definition of Done (DoD) - Smart Restaurant
 
+## Team Members
+
+| Tên | MSSV | Role |
+|-----|------|------|
+| Nguyễn Lê Thế Vinh | 23120190 | Team Lead, FE Customer |
+| Trần Thanh An | 23120017 | Backend, Database |
+| Nguyễn Thị Ánh Ngọc | 23120061 | FE Admin, QA |
+
+---
+
 ## General DoD (Áp dụng cho mọi task)
 
 ### Code Quality
 
-- [ ] Code compiles without errors
-- [ ] No console errors/warnings
-- [ ] Code follows project coding standards
-- [ ] Self-reviewed before PR
+- [x] Code compiles without errors
+- [x] No console errors/warnings
+- [x] Code follows project coding standards
+- [x] Self-reviewed before PR
 
 ### Testing
 
-- [ ] Manual testing passed
-- [ ] Edge cases considered
-- [ ] Responsive on mobile/desktop
+- [x] Manual testing passed
+- [x] Edge cases considered
+- [x] Responsive on mobile/desktop
 
 ### Documentation
 
-- [ ] Functions documented with JSDoc (complex ones)
-- [ ] README updated if needed
-- [ ] API docs updated if BE changes
+- [x] Functions documented with JSDoc (complex ones)
+- [x] README updated if needed
+- [x] API docs updated if BE changes
 
 ### Git
 
-- [ ] Meaningful commit messages
-- [ ] PR created with description
-- [ ] At least 1 reviewer approved
+- [x] Meaningful commit messages
+- [x] PR created with description
+- [x] At least 1 reviewer approved
 
 ---
 
@@ -33,73 +43,94 @@
 
 ### Frontend Component
 
-- [ ] Component renders correctly
-- [ ] Props validated
-- [ ] Loading states handled
-- [ ] Error states handled
-- [ ] Responsive design works
+- [x] Component renders correctly
+- [x] Props validated (TypeScript)
+- [x] Loading states handled (Skeleton)
+- [x] Error states handled
+- [x] Responsive design works
 
 ### Backend API
 
-- [ ] Endpoint returns correct data
-- [ ] Input validation works
-- [ ] Error codes appropriate
-- [ ] Tested with Postman
-- [ ] Documented in API_DOCUMENTATION.md
+- [x] Endpoint returns correct data
+- [x] Input validation works
+- [x] Error codes appropriate
+- [x] Tested with Postman/browser
+- [x] Documented in API_DOCUMENTATION.md
 
 ### Database Change
 
-- [ ] Migration file created
-- [ ] Rollback works
-- [ ] Seed data updated if needed
-- [ ] No data loss on existing records
+- [x] Migration file created
+- [x] Rollback works
+- [x] Seed data updated if needed
+- [x] No data loss on existing records
 
 ### UI Page
 
-- [ ] Matches mockup design
-- [ ] All interactive elements work
-- [ ] Loading indicators present
-- [ ] Error messages user-friendly
-- [ ] Mobile responsive
+- [x] Matches mockup design
+- [x] All interactive elements work
+- [x] Loading indicators present
+- [x] Error messages user-friendly
+- [x] Mobile responsive
 
 ---
 
 ## DoD by Sprint Deliverable
 
-### Sprint 1: Guest Ordering
+### Sprint 0: Setup ✅
 
-- [ ] Can add items to cart ✅
-- [ ] Can submit order ✅
-- [ ] Can view order status ✅
-- [ ] Real-time updates working ✅
+- [x] Team aligned on scope
+- [x] Backend + Frontend running locally
+- [x] Database schema finalized
 
-### Sprint 2: KDS & Waiter
+### Sprint 1: Guest Ordering ✅
 
-- [ ] KDS shows new orders ✅
-- [ ] Kitchen can update status ✅
-- [ ] Waiter notifications work ✅
-- [ ] Timer displays correctly ✅
+- [x] Can add items to cart
+- [x] Can submit order
+- [x] Can view order status
+- [x] Real-time updates working
 
-### Sprint 3: Payment & Reports
+### Sprint 2: KDS & Waiter ✅
 
-- [ ] Bill calculates correctly ✅
-- [ ] Payment flow works ✅
-- [ ] Daily revenue shows ✅
-- [ ] Top items chart works ✅
+- [x] KDS shows new orders
+- [x] Kitchen can update status
+- [x] Waiter notifications work
+- [x] Timer displays correctly
 
-### Sprint 4: Final
+### Sprint 3: Payment & Reports ✅
 
-- [ ] All critical bugs fixed ✅
-- [ ] Demo flow works E2E ✅
-- [ ] Mobile tested ✅
+- [x] Bill calculates correctly
+- [x] Payment flow works
+- [x] Daily revenue shows
+- [x] Top items chart works
 
-### Sprint 5: Delivery
+### Sprint 4: Final ✅
 
-- [ ] Deployed successfully ✅
-- [ ] Public URL accessible ✅
-- [ ] Demo video recorded ✅
-- [ ] Self-Assessment complete ✅
+- [x] All critical bugs fixed
+- [x] Demo flow works E2E
+- [x] Mobile tested
+
+### Sprint 5: Delivery 🔄
+
+- [x] Documentation complete
+- [x] Self-Assessment filled
+- [ ] Deployed successfully
+- [ ] Public URL accessible
+- [ ] Demo video recorded
 
 ---
 
-_Document Version: 1.0 | Last Updated: 03/01/2026_
+## Acceptance Criteria Met
+
+| Sprint | DoD Items | Completed | Percentage |
+|--------|-----------|-----------|------------|
+| Sprint 0 | 3 | 3 | 100% ✅ |
+| Sprint 1 | 4 | 4 | 100% ✅ |
+| Sprint 2 | 4 | 4 | 100% ✅ |
+| Sprint 3 | 4 | 4 | 100% ✅ |
+| Sprint 4 | 3 | 3 | 100% ✅ |
+| Sprint 5 | 5 | 2 | 40% 🔄 |
+| **Total** | **23** | **20** | **87%** |
+
+---
+
+_Document Version: 1.1 | Last Updated: 16/01/2026_

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
@@ -9,14 +9,16 @@ import {
   Bell,
   Sparkles,
   X,
-  RefreshCw,
   LogOut,
   Filter,
   Volume2,
   VolumeX,
-  Key,
   CreditCard,
+<<<<<<< HEAD
   Receipt,
+=======
+  Loader2,
+>>>>>>> main
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +54,7 @@ interface OrderItem {
   quantity: number;
   price_per_unit: string;
   total_price: string;
-  status?: "pending" | "preparing" | "ready" | "served";
+  status?: "pending" | "preparing" | "ready" | "served" | "paid";
 }
 
 interface WaiterOrder {
@@ -156,17 +158,49 @@ export default function WaiterOrdersPage() {
     }
   }, []);
 
+  // Sound notification for ready items
+  const playNotificationSound = useCallback(() => {
+    if (!isSoundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log("Audio not available");
+    }
+  }, [isSoundEnabled]);
+
+  const prevReadyCountRef = useRef(0);
+
   const fetchReadyItems = useCallback(async () => {
     try {
       const token = localStorage.getItem("waiterToken");
       if (!token) return;
 
       const items = await waiterAPI.getReadyItems();
+      
+      // Play sound if new items arrived
+      if (items.length > prevReadyCountRef.current && prevReadyCountRef.current > 0) {
+        playNotificationSound();
+      }
+      prevReadyCountRef.current = items.length;
+      
       setReadyItems(items);
     } catch (error) {
       console.error("Error fetching ready items:", error);
     }
-  }, []);
+  }, [playNotificationSound]);
 
   const handleServeItem = async (itemId: string) => {
     try {
@@ -367,7 +401,6 @@ export default function WaiterOrdersPage() {
     router.push("/waiter/login");
   };
 
-  const readyOrdersCount = orders.filter((o) => o.status === "ready").length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -404,17 +437,6 @@ export default function WaiterOrdersPage() {
               ) : (
                 <VolumeX className="h-4 w-4" />
               )}
-            </Button>
-            <Button variant="outline" size="icon" onClick={fetchOrders}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => router.push("/waiter/change-password")}
-              title="Đổi mật khẩu"
-            >
-              <Key className="h-4 w-4" />
             </Button>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
@@ -560,7 +582,7 @@ export default function WaiterOrdersPage() {
       <TabsContent value="orders" className="p-4">
         {isLoading ? (
           <div className="py-24 text-center">
-            <RefreshCw className="mx-auto mb-4 h-12 w-12 text-muted-foreground animate-spin" />
+            <Loader2 className="mx-auto mb-4 h-12 w-12 text-muted-foreground animate-spin" />
             <h2 className="text-xl font-bold text-foreground">Đang tải...</h2>
           </div>
         ) : filteredOrders.length === 0 ? (
@@ -701,7 +723,11 @@ export default function WaiterOrdersPage() {
                               );
                             }
                             
+<<<<<<< HEAD
                             if (allItemsServed && orderStatus !== "paid") {
+=======
+                            if (allItemsServed) {
+>>>>>>> main
                               return (
                                 <>
                                   <Badge className="bg-orange-100 text-orange-700 border-orange-300">
@@ -736,7 +762,7 @@ export default function WaiterOrdersPage() {
         )}
       </TabsContent>
 
-      {/* Ready Items Tab */}
+      {/* Ready Items Tab - Grouped by Table */}
       <TabsContent value="ready" className="p-4">
         {readyItems.length === 0 ? (
           <div className="py-24 text-center">
@@ -749,44 +775,81 @@ export default function WaiterOrdersPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {readyItems.map((item) => (
-              <Card key={item.item_id} className="overflow-hidden ring-2 ring-success">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-success/10">
-                          <span className="font-bold text-success">
-                            {item.table_number}
-                          </span>
+          <div className="space-y-6">
+            {/* Group items by table */}
+            {Object.entries(
+              readyItems.reduce((acc, item) => {
+                const table = item.table_number;
+                if (!acc[table]) acc[table] = [];
+                acc[table].push(item);
+                return acc;
+              }, {} as Record<string, ReadyItem[]>)
+            )
+              .sort(([a], [b]) => parseInt(a) - parseInt(b))
+              .map(([tableNumber, items]) => (
+                <Card key={tableNumber} className="overflow-hidden border-2 border-success">
+                  {/* Table Header */}
+                  <div className="bg-success/10 px-4 py-3 border-b border-success/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-success text-white font-bold text-lg">
+                          {tableNumber}
                         </div>
                         <div>
-                          <h3 className="font-bold text-card-foreground">
-                            {item.item_name}
+                          <h3 className="font-bold text-lg text-foreground">
+                            Bàn {tableNumber}
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Order #{item.order_id.slice(-6)} • x{item.quantity}
+                            {items.length} món sẵn sàng
                           </p>
                         </div>
                       </div>
-                      {item.notes && (
-                        <p className="text-sm text-muted-foreground mt-2">
-                          📝 {item.notes}
-                        </p>
-                      )}
+                      <Badge className="bg-success text-white text-sm px-3 py-1">
+                        <Bell className="mr-1.5 h-4 w-4" />
+                        Ready
+                      </Badge>
                     </div>
-                    <Button
-                      className="bg-success hover:bg-success/90"
-                      onClick={() => handleServeItem(item.item_id)}
-                    >
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Đã phục vụ
-                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                  
+                  {/* Items List */}
+                  <CardContent className="p-0">
+                    <div className="divide-y divide-border">
+                      {items.map((item) => (
+                        <div
+                          key={item.item_id}
+                          className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-bold">
+                                {item.quantity}
+                              </span>
+                              <h4 className="font-semibold text-card-foreground">
+                                {item.item_name}
+                              </h4>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Order #{item.order_id.slice(-6)}
+                            </p>
+                            {item.notes && (
+                              <p className="text-sm text-warning mt-1 flex items-center gap-1">
+                                <span>📝</span> {item.notes}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            className="bg-success hover:bg-success/90 shadow-lg"
+                            onClick={() => handleServeItem(item.item_id)}
+                          >
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Đã phục vụ
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
           </div>
         )}
       </TabsContent>

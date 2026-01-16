@@ -5,12 +5,12 @@
 | Mục                 | Chi tiết                                   |
 | ------------------- | ------------------------------------------ |
 | **Project Name**    | Smart Restaurant - QR Menu Ordering System |
-| **Project Manager** | Dev A (Team Lead)                          |
+| **Project Manager** | Nguyễn Lê Thế Vinh (Team Lead)             |
 | **Start Date**      | 03/01/2026                                 |
 | **End Date**        | 22/01/2026                                 |
 | **Duration**        | 20 ngày                                    |
 | **Team Size**       | 3 người                                    |
-| **GitHub Repo**     | \<Your Repository URL\>                    |
+| **GitHub Repo**     | https://github.com/TranAn205/smart-restaurant |
 
 ---
 
@@ -67,12 +67,12 @@
 
 ## 4. Stakeholders
 
-| Stakeholder | Role                    | Interest               | Contact   |
-| ----------- | ----------------------- | ---------------------- | --------- |
-| Giảng viên  | Evaluator               | Đánh giá final project | -         |
-| Dev A       | Team Lead / FE Customer | Delivery, demo         | \<email\> |
-| Dev B       | Backend / Infra         | API, Socket, Deploy    | \<email\> |
-| Dev C       | FE Admin / QA           | Admin UI, Testing      | \<email\> |
+| Stakeholder | Role                    | Interest               | GitHub |
+| ----------- | ----------------------- | ---------------------- | ------ |
+| Giảng viên  | Evaluator               | Đánh giá final project | -      |
+| Nguyễn Lê Thế Vinh | Team Lead / FE Customer | Delivery, demo | Zinthw |
+| Trần Thanh An | Backend / Infra | API, Socket, Deploy | Gaaus56 |
+| Nguyễn Thị Ánh Ngọc | FE Admin / QA | Admin UI, Testing | angquoc |
 
 ---
 
@@ -113,12 +113,12 @@
 
 ## 8. Approval
 
-| Role            | Name  | Signature        | Date             |
-| --------------- | ----- | ---------------- | ---------------- |
-| Project Manager | Dev A | ****\_\_\_\_**** | ****\_\_\_\_**** |
-| Team Member     | Dev B | ****\_\_\_\_**** | ****\_\_\_\_**** |
-| Team Member     | Dev C | ****\_\_\_\_**** | ****\_\_\_\_**** |
+| Role            | Name                   | Student ID | Date       |
+| --------------- | ---------------------- | ---------- | ---------- |
+| Project Manager | Nguyễn Lê Thế Vinh     | 23120190   | 16/01/2026 |
+| Team Member     | Trần Thanh An          | 23120017   | 16/01/2026 |
+| Team Member     | Nguyễn Thị Ánh Ngọc    | 23120061   | 16/01/2026 |
 
 ---
 
-_Document Version: 1.0 | Last Updated: 03/01/2026_
+_Document Version: 1.1 | Last Updated: 16/01/2026_
