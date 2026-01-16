@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Clock,
@@ -12,7 +12,6 @@ import {
   VolumeX,
   Loader2,
   LogOut,
-  Key,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +156,29 @@ export default function KitchenDisplayPage() {
     }
   };
 
+  // Sound notification function
+  const playNotificationSound = useCallback(() => {
+    if (!isSoundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log("Audio not available");
+    }
+  }, [isSoundEnabled]);
+
   const handleItemStatusChange = async (itemId: string, newStatus: string) => {
     try {
       await kitchenAPI.updateItemStatus(itemId, newStatus);
@@ -166,8 +188,8 @@ export default function KitchenDisplayPage() {
         description: `Item marked as ${newStatus}`,
       });
       // Play sound for ready status
-      if (newStatus === 'ready' && isSoundEnabled) {
-        // Would play notification sound in production
+      if (newStatus === 'ready') {
+        playNotificationSound();
       }
     } catch (error: any) {
       toast({
@@ -188,9 +210,7 @@ export default function KitchenDisplayPage() {
         description: "Order marked as ready",
       });
       // Play sound for ready status
-      if (isSoundEnabled) {
-        // Would play notification sound in production
-      }
+      playNotificationSound();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -309,14 +329,6 @@ export default function KitchenDisplayPage() {
           </Button>
           <Button variant="outline" size="icon" onClick={fetchOrders}>
             <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => router.push("/kitchen/change-password")}
-            title="Đổi mật khẩu"
-          >
-            <Key className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
