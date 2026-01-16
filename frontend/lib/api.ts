@@ -248,7 +248,7 @@ export const menuAPI = {
   // Get all menu items
   getItems: (params?: string) => {
     const query = params ? `?${params}` : "";
-    return fetchAPI<{ data: any[] }>(`/menu/items${query}`);
+    return fetchAPI<{ data: any[]; pagination?: any; total?: number }>(`/menu/items${query}`);
   },
 
   // Get single item detail

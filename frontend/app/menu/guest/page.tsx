@@ -19,6 +19,8 @@ import { menuAPI, getImageUrl } from "@/lib/api";
 export default function GuestMenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<"created_at" | "popularity">("created_at");
+  const [chefRecommended, setChefRecommended] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -78,6 +80,14 @@ export default function GuestMenuPage() {
       if (searchQuery) {
         params.set('q', searchQuery);
       }
+      // Sort by popularity or creation date
+      if (sortBy === 'popularity') {
+        params.set('sort', 'popularity');
+      }
+      // Filter by chef recommendation
+      if (chefRecommended) {
+        params.set('chefRecommended', 'true');
+      }
 
       const itemsRes = await menuAPI.getItems(params.toString());
       if (itemsRes.data && itemsRes.data.length > 0) {
@@ -131,7 +141,7 @@ export default function GuestMenuPage() {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, activeCategory, searchQuery]);
+  }, [currentPage, activeCategory, searchQuery, sortBy, chefRecommended]);
 
   // Reset page when search or category changes
   useEffect(() => {
@@ -140,7 +150,7 @@ export default function GuestMenuPage() {
       params.set('page', '1');
       router.push(`?${params.toString()}`);
     }
-  }, [searchQuery, activeCategory]);
+  }, [searchQuery, activeCategory, sortBy, chefRecommended]);
 
   // Simple fuzzy search function
   const fuzzyMatch = (text: string, query: string): boolean => {
@@ -229,6 +239,10 @@ export default function GuestMenuPage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         tableId={tableNumber}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        chefRecommended={chefRecommended}
+        onChefRecommendedChange={setChefRecommended}
       />
 
       <CategoryTabs
