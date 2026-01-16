@@ -59,7 +59,7 @@ export default function StaffManagementPage() {
   const fetchStaff = async () => {
     try {
       const token = localStorage.getItem("admin_token");
-      const response = await fetch(`${API_BASE_URL}/admin/users?role=waiter,kitchen`, {
+      const response = await fetch(`${API_BASE_URL}/users/staff`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
