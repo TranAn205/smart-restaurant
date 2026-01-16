@@ -117,30 +117,44 @@ export default function ReportsPage() {
     try {
       const doc = new jsPDF();
       
+      // Helper to remove Vietnamese diacritics for PDF compatibility
+      const removeVietnamese = (str: string) => {
+        return str
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/đ/g, "d")
+          .replace(/Đ/g, "D");
+      };
+
+      // PDF-safe price formatter (no Unicode ₫ symbol)
+      const pdfPrice = (value: number) => {
+        return new Intl.NumberFormat("en-US").format(value) + " VND";
+      };
+      
       // Title
       doc.setFontSize(18);
-      doc.text("Báo cáo Doanh thu", 14, 22);
+      doc.text("Bao cao Doanh thu", 14, 22);
       doc.setFontSize(11);
-      doc.text(`Từ: ${startDate} - Đến: ${endDate}`, 14, 30);
+      doc.text(`Tu: ${startDate} - Den: ${endDate}`, 14, 30);
       
       // Summary
       doc.setFontSize(12);
-      doc.text(`Tổng doanh thu: ${formatPrice(totalRevenue)}`, 14, 42);
-      doc.text(`Tổng đơn hàng: ${totalOrders}`, 14, 50);
-      doc.text(`Giá trị trung bình: ${formatPrice(avgOrderValue)}`, 14, 58);
+      doc.text(`Tong doanh thu: ${pdfPrice(totalRevenue)}`, 14, 42);
+      doc.text(`Tong don hang: ${totalOrders}`, 14, 50);
+      doc.text(`Gia tri trung binh: ${pdfPrice(avgOrderValue)}`, 14, 58);
       
       // Daily Revenue Table
       if (dailyReports.length > 0) {
         doc.setFontSize(14);
-        doc.text("Doanh thu theo ngày", 14, 72);
+        doc.text("Doanh thu theo ngay", 14, 72);
         
         autoTable(doc, {
           startY: 76,
-          head: [["Ngày", "Số đơn", "Doanh thu"]],
+          head: [["Ngay", "So don", "Doanh thu"]],
           body: dailyReports.map((day) => [
-            new Date(day.date).toLocaleDateString("vi-VN"),
+            day.date.split("T")[0], // Simple date format YYYY-MM-DD
             day.total_orders,
-            formatPrice(parseFloat(day.revenue)),
+            pdfPrice(parseFloat(day.revenue)),
           ]),
           styles: { fontSize: 10 },
           headStyles: { fillColor: [249, 115, 22] },
@@ -151,16 +165,16 @@ export default function ReportsPage() {
       if (topItems.length > 0) {
         const finalY = (doc as any).lastAutoTable?.finalY || 100;
         doc.setFontSize(14);
-        doc.text("Món bán chạy", 14, finalY + 15);
+        doc.text("Mon ban chay", 14, finalY + 15);
         
         autoTable(doc, {
           startY: finalY + 19,
-          head: [["#", "Tên món", "Số lượng", "Doanh thu"]],
+          head: [["#", "Ten mon", "So luong", "Doanh thu"]],
           body: topItems.map((item, idx) => [
             idx + 1,
-            item.name,
+            removeVietnamese(item.name),
             item.total_sold,
-            formatPrice(parseFloat(item.revenue)),
+            pdfPrice(parseFloat(item.revenue)),
           ]),
           styles: { fontSize: 10 },
           headStyles: { fillColor: [249, 115, 22] },
@@ -168,10 +182,10 @@ export default function ReportsPage() {
       }
       
       doc.save(`bao-cao-${startDate}-${endDate}.pdf`);
-      toast({ title: "Thành công", description: "Đã xuất file PDF" });
+      toast({ title: "Thanh cong", description: "Da xuat file PDF" });
     } catch (error) {
       console.error("PDF export error:", error);
-      toast({ title: "Lỗi", description: "Không thể xuất PDF", variant: "destructive" });
+      toast({ title: "Loi", description: "Khong the xuat PDF", variant: "destructive" });
     }
   };
 
