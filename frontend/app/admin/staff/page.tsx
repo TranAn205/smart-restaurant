@@ -159,7 +159,7 @@ export default function StaffManagementPage() {
       const token = localStorage.getItem("admin_token");
       const newStatus = staff.status === "active" ? "inactive" : "active";
       
-      await fetch(`${API_BASE_URL}/admin/users/${staff.id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/users/${staff.id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -167,6 +167,8 @@ export default function StaffManagementPage() {
         },
         body: JSON.stringify({ status: newStatus }),
       });
+      
+      if (!response.ok) throw new Error("Failed to update status");
       
       fetchStaff();
     } catch (err) {

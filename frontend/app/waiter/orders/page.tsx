@@ -425,17 +425,6 @@ export default function WaiterOrdersPage() {
                 {paymentRequests.length} thanh toán
               </Badge>
             )}
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-            >
-              {isSoundEnabled ? (
-                <Volume2 className="h-4 w-4" />
-              ) : (
-                <VolumeX className="h-4 w-4" />
-              )}
-            </Button>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
             </Button>

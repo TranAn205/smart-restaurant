@@ -22,8 +22,8 @@ interface OrderItem {
   id: string;
   item_name: string;
   quantity: number;
-  unit_price: string;
-  subtotal: string;
+  price_per_unit: string;
+  total_price: string;
   special_instructions?: string;
   status: string;
 }
@@ -135,6 +135,74 @@ export default function OrderDetailPage() {
   const StatusIcon = config.icon;
   const orderTime = new Date(order.created_at);
 
+  const handlePrintInvoice = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Hóa đơn - Bàn ${order.table_number || order.table_id}</title>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .header p { margin: 5px 0; color: #666; }
+          .info { margin-bottom: 15px; }
+          .info-row { display: flex; justify-content: space-between; margin: 5px 0; }
+          .items { border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc; padding: 15px 0; margin: 15px 0; }
+          .item { display: flex; justify-content: space-between; margin: 8px 0; }
+          .item-name { flex: 1; }
+          .item-qty { width: 40px; text-align: center; }
+          .item-price { width: 100px; text-align: right; }
+          .total { font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px solid #333; }
+          .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>🍽️ Smart Restaurant</h1>
+          <p>Hóa đơn thanh toán</p>
+        </div>
+        <div class="info">
+          <div class="info-row"><span>Số HD:</span><span>#${order.id.toString().slice(-6).padStart(6, "0")}</span></div>
+          <div class="info-row"><span>Bàn:</span><span>${order.table_number || order.table_id}</span></div>
+          <div class="info-row"><span>Thời gian:</span><span>${orderTime.toLocaleString("vi-VN")}</span></div>
+          ${order.customer_name ? `<div class="info-row"><span>Khách:</span><span>${order.customer_name}</span></div>` : ""}
+        </div>
+        <div class="items">
+          <div class="item" style="font-weight:bold;border-bottom:1px solid #ccc;padding-bottom:8px;margin-bottom:8px;">
+            <span class="item-name">Món</span>
+            <span class="item-qty">SL</span>
+            <span class="item-price">Thành tiền</span>
+          </div>
+          ${order.items.map(item => `
+            <div class="item">
+              <span class="item-name">${item.item_name}</span>
+              <span class="item-qty">x${item.quantity}</span>
+              <span class="item-price">${parseFloat(item.total_price || "0").toLocaleString("vi-VN")}đ</span>
+            </div>
+          `).join("")}
+        </div>
+        <div class="total">
+          <span>TỔNG CỘNG</span>
+          <span>${parseFloat(order.total_amount).toLocaleString("vi-VN")}đ</span>
+        </div>
+        <div class="footer">
+          <p>Cảm ơn quý khách!</p>
+          <p>Hẹn gặp lại</p>
+        </div>
+        <script>window.onload = () => window.print();</script>
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   return (
     <AdminLayout>
       <div className="p-6">
@@ -158,7 +226,7 @@ export default function OrderDetailPage() {
               <StatusIcon className="mr-1 h-3 w-3" />
               {config.label}
             </Badge>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handlePrintInvoice}>
               <Printer className="mr-2 h-4 w-4" />
               In hóa đơn
             </Button>
@@ -197,10 +265,10 @@ export default function OrderDetailPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">
-                            {formatPrice(parseFloat(item.subtotal))}
+                            {formatPrice(parseFloat(item.total_price || "0"))}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {formatPrice(parseFloat(item.unit_price))} / món
+                            {formatPrice(parseFloat(item.price_per_unit || "0"))} / món
                           </p>
                         </div>
                       </div>
