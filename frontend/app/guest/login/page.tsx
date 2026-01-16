@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { customerAuthAPI, API_BASE_URL } from "@/lib/api";
+import { customerAuthAPI, customerAPI, API_BASE_URL } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
@@ -63,6 +63,16 @@ export default function GuestLoginPage() {
         localStorage.setItem("customerName", data.user.full_name || data.user.name);
         localStorage.setItem("customerInfo", JSON.stringify(data.user));
       }
+
+      // Link any anonymous orders from this table to the user
+      const tableId = localStorage.getItem("tableId");
+      if (tableId) {
+        try {
+          await customerAPI.linkOrders(tableId);
+        } catch (linkErr) {
+          console.log("No orders to link or error linking:", linkErr);
+        }
+      }
       
       router.push("/menu/guest");
     } catch (err: any) {
@@ -91,6 +101,16 @@ export default function GuestLoginPage() {
       localStorage.setItem("customerName", user.full_name || user.fullName || "");
       localStorage.setItem("customerId", user.id);
       localStorage.setItem("customerInfo", JSON.stringify(user));
+
+      // Link any anonymous orders from this table to the user
+      const tableId = localStorage.getItem("tableId");
+      if (tableId) {
+        try {
+          await customerAPI.linkOrders(tableId);
+        } catch (linkErr) {
+          console.log("No orders to link or error linking:", linkErr);
+        }
+      }
 
       router.push("/menu/guest");
     } catch (err: any) {

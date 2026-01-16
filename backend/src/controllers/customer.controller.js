@@ -148,6 +148,49 @@ exports.getOrderedItems = async (req, res, next) => {
 };
 
 /**
+ * POST /api/customer/link-orders
+ * Link orders from a table to the logged-in user
+ * This allows customers who ordered as guests to claim their orders after logging in
+ */
+exports.linkOrders = async (req, res, next) => {
+  try {
+    const { tableId } = req.body;
+    const userId = req.user.userId;
+
+    if (!tableId) {
+      return res.status(400).json({ message: "tableId là bắt buộc" });
+    }
+
+    // Update orders that:
+    // 1. Belong to this table
+    // 2. Don't have a user_id yet (anonymous orders)
+    // 3. Were created today (to avoid linking old orders from previous guests)
+    // 4. Are in status: pending, accepted, preparing, ready, served, paid
+    const result = await db.query(
+      `UPDATE orders 
+       SET user_id = $1
+       WHERE table_id = $2 
+         AND user_id IS NULL
+         AND created_at > NOW() - INTERVAL '24 hours'
+         AND status NOT IN ('cancelled')
+       RETURNING id`,
+      [userId, tableId]
+    );
+
+    const linkedCount = result.rowCount;
+
+    res.json({ 
+      message: linkedCount > 0 
+        ? `Đã liên kết ${linkedCount} đơn hàng với tài khoản của bạn` 
+        : "Không có đơn hàng nào cần liên kết",
+      linkedOrders: linkedCount
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * PUT /api/customer/change-password
  * Change customer password
  */
