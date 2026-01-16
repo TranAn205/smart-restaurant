@@ -48,7 +48,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { adminAPI } from "@/lib/api";
+import { adminAPI, API_BASE_URL } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface Table {
@@ -190,6 +190,31 @@ export default function TablesPage() {
       });
     } finally {
       setQrLoading(false);
+    }
+  };
+
+  // Open QR dialog - auto generate if not exists
+  const handleOpenQrDialog = async (table: Table) => {
+    setShowQrDialog(table);
+    setQrImageUrl(null);
+    setQrLoadError(false);
+    
+    // Auto-generate QR if table doesn't have one yet
+    if (!table.qr_token) {
+      setQrLoading(true);
+      try {
+        const result = await adminAPI.tables.generateQR(table.id);
+        setQrImageUrl(result.qrImageDataUrl);
+        fetchTables();
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to generate QR",
+          variant: "destructive",
+        });
+      } finally {
+        setQrLoading(false);
+      }
     }
   };
 
@@ -721,11 +746,7 @@ export default function TablesPage() {
                         <Button
                           variant="outline"
                           className="flex-1 bg-transparent"
-                          onClick={() => {
-                            setShowQrDialog(table);
-                            setQrImageUrl(null);
-                            setQrLoadError(false);
-                          }}
+                          onClick={() => handleOpenQrDialog(table)}
                         >
                           <QrCode className="mr-1 h-4 w-4" />
                           QR
@@ -843,7 +864,7 @@ export default function TablesPage() {
                   />
                 ) : showQrDialog?.qr_token && !qrLoadError ? (
                   <img
-                    src={`${window.location.origin}/api/admin/tables/${showQrDialog.id}/qr/download?format=png&token=${localStorage.getItem("admin_token")}`}
+                    src={`${API_BASE_URL}/admin/tables/${showQrDialog.id}/qr/download?format=png&token=${localStorage.getItem("admin_token")}`}
                     alt={`QR Code for Table ${showQrDialog?.table_number}`}
                     className="h-full w-full object-contain"
                     onError={() => setQrLoadError(true)}

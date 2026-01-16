@@ -508,9 +508,9 @@ export default function ReportsPage() {
                           borderRadius: "8px",
                         }}
                         labelStyle={{ color: "#F9FAFB" }}
-                        formatter={(value: number, name: string) => [
+                        formatter={(value, name) => [
                           name === "revenue"
-                            ? formatPrice(value)
+                            ? formatPrice(Number(value))
                             : `${value} đơn`,
                           name === "revenue" ? "Doanh thu" : "Số đơn",
                         ]}
