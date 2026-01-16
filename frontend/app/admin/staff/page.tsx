@@ -126,7 +126,7 @@ export default function StaffManagementPage() {
         if (!response.ok) throw new Error("Update failed");
       } else {
         // Create new staff
-        const response = await fetch(`${API_BASE_URL}/auth/staff/register`, {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
