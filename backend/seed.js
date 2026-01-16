@@ -130,18 +130,20 @@ const seed = async () => {
         );
 
         // Waiter (5 người)
+        const waiterNames = ['Nguyễn Văn A', 'Trần Thị B', 'Lê Văn C', 'Phạm Thị D', 'Hoàng Văn E'];
         for (let i = 1; i <= 5; i++) {
             await client.query(
-                `INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4)`,
-                [`waiter${i}@res.com`, hash, 'waiter', 'active']
+                `INSERT INTO users (email, password_hash, full_name, role, status) VALUES ($1, $2, $3, $4, $5)`,
+                [`waiter${i}@res.com`, hash, waiterNames[i-1], 'waiter', 'active']
             );
         }
 
         // Kitchen Staff (3 người)
+        const kitchenNames = ['Đầu bếp Minh', 'Phó bếp Hùng', 'Phụ bếp Lan'];
         for (let i = 1; i <= 3; i++) {
             await client.query(
-                `INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4)`,
-                [`kitchen${i}@res.com`, hash, 'kitchen', 'active']
+                `INSERT INTO users (email, password_hash, full_name, role, status) VALUES ($1, $2, $3, $4, $5)`,
+                [`kitchen${i}@res.com`, hash, kitchenNames[i-1], 'kitchen', 'active']
             );
         }
 

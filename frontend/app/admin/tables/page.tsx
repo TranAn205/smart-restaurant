@@ -45,6 +45,8 @@ import {
   FileText,
   Loader2,
   CheckSquare,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { adminAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -86,6 +88,8 @@ export default function TablesPage() {
   const [regeneratingAll, setRegeneratingAll] = useState(false);
   const [selectedTables, setSelectedTables] = useState<number[]>([]);
   const [isSelectMode, setIsSelectMode] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   // Form states
   const [formData, setFormData] = useState({
@@ -118,6 +122,18 @@ export default function TablesPage() {
   const filteredTables = tables.filter(
     (table) => filterStatus === "all" || table.status === filterStatus
   );
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTables.length / ITEMS_PER_PAGE);
+  const paginatedTables = filteredTables.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus]);
 
   const resetForm = () => {
     setFormData({
@@ -636,7 +652,7 @@ export default function TablesPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filteredTables.map((table) => {
+            {paginatedTables.map((table) => {
               const config = statusConfig[table.status] || statusConfig.active;
 
               return (
@@ -755,6 +771,47 @@ export default function TablesPage() {
                 </Card>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalPages > 1 && (
+          <div className="mt-6 flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="w-8"
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            
+            <span className="ml-4 text-sm text-muted-foreground">
+              Trang {currentPage} / {totalPages} ({filteredTables.length} bàn)
+            </span>
           </div>
         )}
 
