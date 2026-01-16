@@ -77,55 +77,27 @@ app.get("/health", (req, res) => {
 app.use("/uploads", express.static(path.join(__dirname, "../public/uploads")));
 
 // --- ROUTES ---
-app.use("/api/auth", authLimiter, authRouter);
+const adminProfileRoutes = require("./routes/admin-profile");
 
-// New Routes
-app.use("/api/reviews", reviewsRouter); // Reviews (Public read, Private write)
-app.use("/api/users", usersRouter);     // User Profile & Admin Management
+app.use("/api/auth", authLimiter, authRouter);
+app.use("/api/customer", customerRouter);
+app.use("/api/orders", orderLimiter, ordersRouter);
+app.use("/api/payment", paymentRouter);
+
+// Role Routes
+app.use("/api/waiter", requireAuth, requireRole(["waiter", "admin"]), waiterRouter);
+app.use("/api/kitchen", requireAuth, requireRole(["kitchen", "admin"]), kitchenRouter);
 
 // Admin Routes
 app.use("/api/admin/tables", requireAuth, requireRole("admin"), tablesRouter);
 app.use("/api/admin/tables", requireAuth, requireRole("admin"), qrRouter);
-app.use(
-  "/api/admin/menu/categories",
-  requireAuth,
-  requireRole(["admin"]),
-  categoriesRouter
-);
-app.use(
-  "/api/admin/menu/items",
-  requireAuth,
-  requireRole(["admin"]),
-  photosRouter
-);
-app.use(
-  "/api/admin/menu/items",
-  requireAuth,
-  requireRole(["admin"]),
-  itemsRouter
-);
-app.use(
-  "/api/admin/menu",
-  requireAuth,
-  requireRole(["admin"]),
-  modifiersRouter
-);
-
-// Role Routes
-app.use(
-  "/api/waiter",
-  requireAuth,
-  requireRole(["waiter", "admin"]),
-
-  waiterRouter
-);
-app.use(
-  "/api/kitchen",
-  requireAuth,
-  requireRole(["kitchen", "admin"]),
-  kitchenRouter
-);
+app.use("/api/admin/menu/categories", requireAuth, requireRole(["admin"]), categoriesRouter);
+app.use("/api/admin/menu/items", requireAuth, requireRole(["admin"]), photosRouter);
+app.use("/api/admin/menu/items", requireAuth, requireRole(["admin"]), itemsRouter);
+app.use("/api/admin/menu", requireAuth, requireRole(["admin"]), modifiersRouter);
 app.use("/api/admin/reports", requireAuth, requireRole("admin"), reportsRouter);
+app.use("/api/admin", adminProfileRoutes); // Admin profile routes
+app.use("/api/users", requireAuth, requireRole("admin"), usersRouter);
 
 // Public Routes
 app.use("/api/qr", qrRouter); // QR verify (public)
