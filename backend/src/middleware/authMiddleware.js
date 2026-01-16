@@ -70,25 +70,30 @@ const optionalCustomer = (req, res, next) => {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
       
+      console.log('🔍 optionalCustomer - decoded token:', decoded);
+      
       // Hỗ trợ 2 loại token:
       // 1. customerAuth token: { customerId, type: 'customer' }
-      // 2. auth.js token: { userId, email, role: 'guest' }
+      // 2. auth.js token: { userId, email, role }
       if (decoded.type === 'customer') {
         // Token từ customerAuth.js (bảng customers cũ)
         req.customer = { 
           ...decoded, 
           userId: decoded.customerId // Map customerId -> userId để nhất quán
         };
-      } else if (decoded.userId && decoded.role === 'guest') {
-        // Token từ auth.js (bảng users mới)
+      } else if (decoded.userId) {
+        // Token từ auth.js (bảng users mới) - chấp nhận tất cả role
         req.customer = {
           userId: decoded.userId,
           email: decoded.email,
           role: decoded.role
         };
       }
+      
+      console.log('✅ req.customer set to:', req.customer);
     } catch (err) {
       // Token không hợp lệ - bỏ qua, tiếp tục như guest
+      console.log('❌ Token verification failed:', err.message);
     }
   }
   next();

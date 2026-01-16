@@ -76,7 +76,7 @@ exports.create = async (req, res, next) => {
 
     // Check if there's an existing unpaid order for this table
     const existingOrderRes = await client.query(
-      `SELECT id, total_amount FROM orders 
+      `SELECT id, total_amount, user_id FROM orders 
        WHERE table_id = $1 AND status NOT IN ('paid', 'cancelled')
        ORDER BY created_at DESC LIMIT 1`,
       [finalTableId]
@@ -89,10 +89,23 @@ exports.create = async (req, res, next) => {
       // Add to existing order
       orderId = existingOrderRes.rows[0].id;
       console.log(`Adding items to existing order ${orderId}`);
+      
+      // If existing order doesn't have user_id but we have one now, update it
+      const existingUserId = existingOrderRes.rows[0].user_id;
+      const currentUserId = customerId || (req.customer?.userId) || null;
+      
+      if (!existingUserId && currentUserId) {
+        await client.query(
+          `UPDATE orders SET user_id = $1 WHERE id = $2`,
+          [currentUserId, orderId]
+        );
+        console.log(`Updated order ${orderId} with user ${currentUserId}`);
+      }
     } else {
       // Create new order
       isNewOrder = true;
-      const finalUserId = customerId || req.customer?.userId || null;
+      // Priority: customerId from body > userId from auth token > null
+      const finalUserId = customerId || (req.customer?.userId) || null;
       const orderRes = await client.query(
         `INSERT INTO orders (table_id, user_id, customer_name, total_amount, notes, status) 
          VALUES ($1, $2, $3, 0, $4, 'pending') RETURNING id, created_at`,
@@ -104,7 +117,7 @@ exports.create = async (req, res, next) => {
         ]
       );
       orderId = orderRes.rows[0].id;
-      console.log(`Created new order ${orderId}`);
+      console.log(`Created new order ${orderId} for user ${finalUserId}`);
     }
 
     let grandTotal = 0;
@@ -183,11 +196,12 @@ exports.create = async (req, res, next) => {
       io.to("role:waiter").emit(eventType, {
         orderId: orderId,
         tableNumber: tableNumber,
+        tableId: finalTableId,
         total: grandTotal,
         items: processedItems,
-        isNewOrder,finalTableI
+        isNewOrder,
       });
-      io.to(`table:${table_id}`).emit("order:update", {
+      io.to(`table:${finalTableId}`).emit("order:update", {
         status: "pending",
         orderId: orderId,
       });
@@ -474,13 +488,7 @@ exports.requestBill = async (req, res, next) => {
       return res.status(400).json({ message: "Order is cancelled" });
     }
 
-    // Update order to mark bill requested
-    await db.query(
-      `UPDATE orders SET bill_requested = true, bill_requested_at = NOW(), updated_at = NOW() WHERE id = $1`,
-      [id]
-    );
-
-    // Emit socket event to waiter
+    // Just emit socket event to waiter (no need to update DB)
     try {
       const io = getIO();
       io.to("role:waiter").emit("bill:requested", {

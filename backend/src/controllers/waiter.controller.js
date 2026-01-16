@@ -129,6 +129,21 @@ exports.serveItem = async (req, res, next) => {
 
     const item = rows[0];
 
+    // Check if all items in the order are served
+    const allItemsRes = await db.query(
+      "SELECT status FROM order_items WHERE order_id = $1",
+      [item.order_id]
+    );
+    const allServed = allItemsRes.rows.every(i => i.status === 'served');
+    
+    if (allServed) {
+      // Update order status to served
+      await db.query(
+        "UPDATE orders SET status = 'served', updated_at = NOW() WHERE id = $1",
+        [item.order_id]
+      );
+    }
+
     // Socket: Báo khách món đã phục vụ
     const io = getIO();
     const orderRes = await db.query("SELECT table_id FROM orders WHERE id = $1", [item.order_id]);
@@ -137,6 +152,17 @@ exports.serveItem = async (req, res, next) => {
         orderId: item.order_id,
         itemId: item.id,
       });
+      
+      // If all served, notify about order status change
+      if (allServed) {
+        io.to(`table:${orderRes.rows[0].table_id}`).emit('order:update', {
+          status: 'served'
+        });
+        io.to('role:waiter').emit('order:update', {
+          orderId: item.order_id,
+          status: 'served'
+        });
+      }
     }
 
     res.json({ message: `Item marked as served`, item });

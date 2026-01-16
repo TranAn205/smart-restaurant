@@ -63,8 +63,41 @@ exports.updateItemStatus = async (req, res, next) => {
       return res.status(404).json({ message: "Item not found" });
     const item = rows[0];
 
-    // Socket: Báo cho Waiter biết món này đã xong
+    // Check if all items in the order are ready
     if (status === "ready") {
+      const allItemsRes = await db.query(
+        "SELECT status FROM order_items WHERE order_id = $1",
+        [item.order_id]
+      );
+      const allReady = allItemsRes.rows.every(i => i.status === 'ready');
+      
+      if (allReady) {
+        // Update order status to ready
+        await db.query(
+          "UPDATE orders SET status = 'ready', updated_at = NOW() WHERE id = $1",
+          [item.order_id]
+        );
+        
+        // Get table_id for socket notification
+        const orderRes = await db.query(
+          "SELECT table_id FROM orders WHERE id = $1",
+          [item.order_id]
+        );
+        
+        // Socket: Báo Waiter và Khách biết đơn hàng đã sẵn sàng
+        const io = getIO();
+        io.to("role:waiter").emit("order:ready", {
+          orderId: item.order_id,
+          status: "ready"
+        });
+        if (orderRes.rowCount > 0) {
+          io.to(`table:${orderRes.rows[0].table_id}`).emit("order:update", {
+            status: "ready"
+          });
+        }
+      }
+
+      // Socket: Báo cho Waiter biết món này đã xong
       const io = getIO();
       io.to("role:waiter").emit("item:ready", {
         orderId: item.order_id,

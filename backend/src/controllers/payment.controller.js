@@ -49,8 +49,74 @@ exports.getBill = async (req, res, next) => {
 };
 
 /**
+ * POST /api/payment/request
+ * Guest requests payment (shows bill, notifies waiter)
+ */
+exports.requestPayment = async (req, res, next) => {
+    try {
+        const { tableId, orderIds } = req.body;
+
+        if (!tableId || !orderIds || orderIds.length === 0) {
+            return res.status(400).json({ message: 'Table ID and order IDs are required' });
+        }
+
+        // Get orders and verify they belong to the table
+        const ordersRes = await db.query(`
+            SELECT o.*, t.table_number 
+            FROM orders o
+            JOIN tables t ON o.table_id = t.id
+            WHERE o.id = ANY($1::uuid[]) 
+            AND o.table_id = $2 
+            AND o.status = 'served'
+        `, [orderIds, tableId]);
+
+        if (ordersRes.rowCount === 0) {
+            return res.status(404).json({ message: 'No served orders found for this table' });
+        }
+
+        const orders = ordersRes.rows;
+        const tableNumber = orders[0].table_number;
+
+        // Get order items
+        const itemsRes = await db.query(`
+            SELECT oi.*, m.name 
+            FROM order_items oi
+            JOIN menu_items m ON oi.menu_item_id = m.id
+            WHERE oi.order_id = ANY($1::uuid[])
+        `, [orderIds]);
+
+        const grandTotal = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+
+        // Send notification to waiter via socket
+        try {
+            const io = getIO();
+            io.to('role:waiter').emit('payment:requested', {
+                tableId,
+                tableNumber,
+                orderIds,
+                orders,
+                items: itemsRes.rows,
+                total: grandTotal,
+                requestedAt: new Date()
+            });
+        } catch (e) {
+            console.error('Socket error:', e);
+        }
+
+        res.json({
+            message: 'Payment request sent',
+            orders,
+            items: itemsRes.rows,
+            total: grandTotal
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * POST /api/payment/orders/:id/pay
- * Process payment for an order
+ * Process payment for an order (confirmed by waiter or auto)
  */
 exports.processPayment = async (req, res, next) => {
     const client = await db.pool.connect();
@@ -72,6 +138,13 @@ exports.processPayment = async (req, res, next) => {
 
         const order = updateRes.rows[0];
 
+        // Get table number
+        const tableRes = await client.query(
+            "SELECT table_number FROM tables WHERE id = $1",
+            [order.table_id]
+        );
+        const tableNumber = tableRes.rows[0]?.table_number;
+
         // Free up the table (set status to 'active' - empty/available)
         if (order.table_id) {
             await client.query(
@@ -82,13 +155,19 @@ exports.processPayment = async (req, res, next) => {
 
         await client.query('COMMIT');
 
-        // Socket: Báo cho mọi người biết bàn này đã xong
+        // Socket: Báo cho mọi người biết đơn hàng đã được thanh toán
         try {
             const io = getIO();
-            io.to(`table:${order.table_id}`).emit('order:paid', order);
+            io.to(`table:${order.table_id}`).emit('order:paid', { 
+                orderId: order.id, 
+                tableNumber,
+                message: 'Thanh toán thành công! Vui lòng đánh giá món ăn.' 
+            });
             io.to('role:waiter').emit('order:paid', order);
             io.to('role:admin').emit('table:freed', { tableId: order.table_id });
-        } catch (e) {}
+        } catch (e) {
+            console.error('Socket error:', e);
+        }
 
         res.json({ message: 'Payment successful', order });
     } catch (err) {
@@ -106,7 +185,12 @@ exports.processPayment = async (req, res, next) => {
 exports.getReceipt = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const orderRes = await db.query("SELECT * FROM orders WHERE id = $1 AND status = 'paid'", [id]);
+        const orderRes = await db.query(`
+            SELECT o.*, t.table_number 
+            FROM orders o
+            JOIN tables t ON o.table_id = t.id
+            WHERE o.id = $1 AND o.status = 'paid'
+        `, [id]);
         
         if (orderRes.rowCount === 0) return res.status(404).json({ message: 'Receipt not found or not paid yet' });
         const order = orderRes.rows[0];
@@ -122,6 +206,7 @@ exports.getReceipt = async (req, res, next) => {
             restaurant: "Smart Restaurant",
             address: "123 Food Street",
             orderId: order.id,
+            tableNumber: order.table_number,
             date: order.paid_at,
             items: itemsRes.rows,
             total: order.total_amount

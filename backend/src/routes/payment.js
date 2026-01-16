@@ -10,6 +10,9 @@ const paymentController = require('../controllers/payment.controller');
 // GET /api/payment/tables/:tableId/bill - Get bill for table
 router.get('/tables/:tableId/bill', paymentController.getBill);
 
+// POST /api/payment/request - Guest requests payment
+router.post('/request', paymentController.requestPayment);
+
 // POST /api/payment/orders/:id/pay - Process payment
 router.post('/orders/:id/pay', paymentController.processPayment);
 
