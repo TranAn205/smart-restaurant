@@ -14,11 +14,8 @@ import {
   Volume2,
   VolumeX,
   CreditCard,
-<<<<<<< HEAD
   Receipt,
-=======
   Loader2,
->>>>>>> main
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -400,7 +397,8 @@ export default function WaiterOrdersPage() {
     localStorage.removeItem("waiterName");
     router.push("/waiter/login");
   };
-
+  
+  const readyOrdersCount = readyItems.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -723,11 +721,7 @@ export default function WaiterOrdersPage() {
                               );
                             }
                             
-<<<<<<< HEAD
                             if (allItemsServed && orderStatus !== "paid") {
-=======
-                            if (allItemsServed) {
->>>>>>> main
                               return (
                                 <>
                                   <Badge className="bg-orange-100 text-orange-700 border-orange-300">
