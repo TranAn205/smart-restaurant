@@ -17,6 +17,8 @@ import {
   X,
   ChefHat,
   Lock,
+  ShoppingBag,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -27,10 +29,12 @@ interface AdminLayoutProps {
 
 const sidebarItems = [
   { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/admin/orders", icon: ShoppingBag, label: "Orders" },
   { href: "/admin/menu/items", icon: UtensilsCrossed, label: "Menu Items" },
   { href: "/admin/menu/categories", icon: FolderOpen, label: "Categories" },
   { href: "/admin/menu/modifiers", icon: Sliders, label: "Modifiers" },
   { href: "/admin/tables", icon: Armchair, label: "Tables" },
+  { href: "/admin/staff", icon: Users, label: "Staff" },
   { href: "/admin/reports", icon: BarChart3, label: "Reports" },
 ];
 

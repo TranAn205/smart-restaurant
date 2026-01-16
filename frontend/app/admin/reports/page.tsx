@@ -9,8 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Calendar,
-  FileSpreadsheet,
-  FileText,
   TrendingUp,
   Package,
   DollarSign,
@@ -109,13 +107,7 @@ export default function ReportsPage() {
     }
   }, [startDate, endDate]);
 
-  const handleExportPDF = () => {
-    toast({ title: "Export PDF", description: "Exporting PDF report..." });
-  };
 
-  const handleExportExcel = () => {
-    toast({ title: "Export Excel", description: "Exporting Excel report..." });
-  };
 
   return (
     <AdminLayout>
@@ -137,15 +129,7 @@ export default function ReportsPage() {
               <RefreshCw
                 className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
               />
-              Refresh
-            </Button>
-            <Button variant="outline" onClick={handleExportPDF}>
-              <FileText className="mr-2 h-4 w-4" />
-              Export PDF
-            </Button>
-            <Button variant="outline" onClick={handleExportExcel}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Export Excel
+              Làm mới
             </Button>
           </div>
         </div>
@@ -329,26 +313,35 @@ export default function ReportsPage() {
                 </div>
               ) : dailyReports.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
-                  No data available for selected period
+                  Không có dữ liệu trong khoảng thời gian này
                 </p>
               ) : (
                 <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {dailyReports.slice(0, 10).map((day) => (
-                    <div
-                      key={day.date}
-                      className="flex items-center justify-between border-b border-border pb-2"
-                    >
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(day.date).toLocaleDateString("vi-VN")}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {day.total_orders} orders
-                      </span>
-                      <span className="font-medium text-card-foreground">
-                        {formatPrice(parseFloat(day.revenue))}
-                      </span>
-                    </div>
-                  ))}
+                  {dailyReports.slice(0, 10).map((day) => {
+                    const maxRevenue = Math.max(...dailyReports.map(d => parseFloat(d.revenue) || 0));
+                    const revenue = parseFloat(day.revenue) || 0;
+                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
+                    
+                    return (
+                      <div
+                        key={day.date}
+                        className="flex items-center gap-3"
+                      >
+                        <span className="w-20 text-sm text-muted-foreground">
+                          {new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
+                        </span>
+                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="w-20 text-sm font-medium text-right">
+                          {formatPrice(revenue)}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

@@ -17,9 +17,8 @@ import {
   CheckCircle,
   ChefHat,
   Eye,
-  ArrowUpRight,
-  ArrowDownRight,
-  RefreshCw,
+  Plus,
+  MonitorPlay,
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI } from "@/lib/api";
@@ -97,8 +96,9 @@ export default function AdminDashboardPage() {
   });
   const [pendingCount, setPendingCount] = useState(0);
   const [preparingCount, setPreparingCount] = useState(0);
+  const [topItems, setTopItems] = useState<Array<{name: string; total_sold: string; revenue: string}>>([]);
+  const [dailyRevenue, setDailyRevenue] = useState<Array<{date: string; revenue: string}>>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
   const fetchDashboardData = async () => {
     try {
@@ -129,11 +129,22 @@ export default function AdminDashboardPage() {
       ).length;
       setPendingCount(pending);
       setPreparingCount(preparing);
+
+      // Fetch top selling items
+      try {
+        const topItemsData = await adminAPI.reports.getTopItems();
+        setTopItems(topItemsData.slice(0, 5));
+      } catch (e) { console.error(e); }
+
+      // Fetch daily revenue
+      try {
+        const dailyData = await adminAPI.reports.getDailyReport();
+        setDailyRevenue(dailyData.slice(0, 7).reverse());
+      } catch (e) { console.error(e); }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
@@ -144,11 +155,6 @@ export default function AdminDashboardPage() {
     const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchDashboardData();
-  };
 
   const statsDisplay = [
     {
@@ -183,17 +189,27 @@ export default function AdminDashboardPage() {
               Welcome back! Here&apos;s what&apos;s happening today.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+            >
+              <a href="/kitchen">
+                <MonitorPlay className="mr-2 h-4 w-4" />
+                Open KDS
+              </a>
+            </Button>
+            <Button
+              size="sm"
+              asChild
+            >
+              <a href="/admin/orders">
+                <Plus className="mr-2 h-4 w-4" />
+                New Order
+              </a>
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -381,6 +397,80 @@ export default function AdminDashboardPage() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Chart and Top Items */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          {/* Revenue Chart (Simple Bar Representation) */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Doanh thu 7 ngày qua</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {dailyRevenue.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>Chưa có dữ liệu doanh thu</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {dailyRevenue.map((day, idx) => {
+                    const maxRevenue = Math.max(...dailyRevenue.map(d => parseFloat(d.revenue) || 0));
+                    const revenue = parseFloat(day.revenue) || 0;
+                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
+                    const dateStr = new Date(day.date).toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "short" });
+                    
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <span className="w-20 text-sm text-muted-foreground">{dateStr}</span>
+                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="w-24 text-sm font-medium text-right">
+                          {formatPrice(revenue)}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Selling Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {topItems.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground">
+                  <p>Chưa có dữ liệu bán hàng</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {topItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-between rounded-lg border border-border p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                          <span className="text-sm font-bold text-primary">{idx + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-card-foreground">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.total_sold} đã bán</p>
+                        </div>
+                      </div>
+                      <span className="font-medium text-success">
+                        {formatPrice(parseFloat(item.revenue))}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
