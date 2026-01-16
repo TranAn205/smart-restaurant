@@ -53,7 +53,16 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
       setLoadingRelated(true)
       fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/menu/items/${item.id}/related`)
         .then(res => res.json())
-        .then(data => setRelatedItems(data.data || []))
+        .then(data => {
+          // Map primary_photo to image field for consistency
+          const mappedItems = (data.data || []).map((relatedItem: any) => ({
+            ...relatedItem,
+            image: relatedItem.primary_photo ? 
+              (relatedItem.primary_photo.startsWith('http') ? relatedItem.primary_photo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'}${relatedItem.primary_photo}`) 
+              : '/placeholder.svg'
+          }));
+          setRelatedItems(mappedItems);
+        })
         .catch(() => setRelatedItems([]))
         .finally(() => setLoadingRelated(false))
     }
