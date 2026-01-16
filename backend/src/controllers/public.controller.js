@@ -234,3 +234,61 @@ exports.getItems = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * GET /api/menu/items/:id/related
+ * Get related menu items (same category)
+ */
+exports.getRelatedItems = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit) || 4;
+
+    // Get current item's category
+    const itemRes = await db.query(
+      'SELECT category_id FROM menu_items WHERE id = $1 AND deleted_at IS NULL',
+      [id]
+    );
+
+    if (itemRes.rowCount === 0) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+
+    const categoryId = itemRes.rows[0].category_id;
+
+    // Get random items from same category, excluding current item
+    const { rows } = await db.query(
+      `
+      SELECT 
+        i.id, 
+        i.name, 
+        i.price, 
+        i.status,
+        i.description,
+        p.photo_url as primary_photo,
+        COALESCE(r.avg_rating, 0) as rating,
+        COALESCE(r.review_count, 0) as reviews
+      FROM menu_items i
+      LEFT JOIN menu_item_photos p ON i.id = p.menu_item_id AND p.is_primary = true
+      LEFT JOIN (
+        SELECT menu_item_id, 
+               ROUND(AVG(rating)::numeric, 1) as avg_rating, 
+               COUNT(*) as review_count
+        FROM reviews
+        GROUP BY menu_item_id
+      ) r ON i.id = r.menu_item_id
+      WHERE i.category_id = $1 
+        AND i.id != $2 
+        AND i.deleted_at IS NULL
+        AND i.status = 'available'
+      ORDER BY RANDOM()
+      LIMIT $3
+      `,
+      [categoryId, id, limit]
+    );
+
+    res.json({ data: rows });
+  } catch (err) {
+    next(err);
+  }
+};

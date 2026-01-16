@@ -515,3 +515,100 @@ exports.requestBill = async (req, res, next) => {
     next(err);
   }
 };
+
+/**
+ * PATCH /api/orders/:id/discount
+ * Apply discount to order (Admin/Waiter only)
+ */
+exports.applyDiscount = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { discountType, discountValue } = req.body;
+
+    if (!discountType || discountValue === undefined) {
+      return res.status(400).json({ message: "Discount type and value are required" });
+    }
+
+    const orderRes = await db.query("SELECT total_amount FROM orders WHERE id = $1", [id]);
+    if (orderRes.rowCount === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const total = parseFloat(orderRes.rows[0].total_amount);
+    let discountAmount = 0;
+
+    if (discountType === "percentage") {
+      discountAmount = (total * parseFloat(discountValue)) / 100;
+    } else if (discountType === "fixed") {
+      discountAmount = parseFloat(discountValue);
+    } else {
+      return res.status(400).json({ message: "Invalid discount type" });
+    }
+
+    await db.query("UPDATE orders SET discount_amount = $1 WHERE id = $2", [discountAmount, id]);
+
+    res.json({
+      message: "Discount applied",
+      discount_amount: discountAmount,
+      new_total: total - discountAmount
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/orders/:id/bill/pdf
+ * Generate bill PDF
+ */
+exports.generateBillPDF = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const PDFDocument = require("pdfkit");
+
+    const orderRes = await db.query(
+      `SELECT o.*, t.table_number,
+              json_agg(json_build_object('name', mi.name, 'quantity', oi.quantity, 'total', oi.total_price)) as items
+       FROM orders o
+       JOIN tables t ON o.table_id = t.id
+       JOIN order_items oi ON o.id = oi.order_id
+       JOIN menu_items mi ON oi.menu_item_id = mi.id
+       WHERE o.id = $1 GROUP BY o.id, t.table_number`,
+      [id]
+    );
+
+    if (orderRes.rowCount === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRes.rows[0];
+    const doc = new PDFDocument();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=bill-${id}.pdf`);
+    doc.pipe(res);
+
+    doc.fontSize(20).text("SMART RESTAURANT", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(12).text(`HÓA ĐƠN #${id}`, { align: "center" });
+    doc.fontSize(10).moveDown().text(`Bàn: ${order.table_number}`);
+    doc.text(`Ngày: ${new Date(order.created_at).toLocaleString("vi-VN")}`);
+    doc.moveDown();
+
+    order.items.forEach((item, i) => {
+      doc.text(`${i + 1}. ${item.name} x${item.quantity} - ${parseFloat(item.total).toLocaleString()}đ`);
+    });
+
+    doc.moveDown().text("─".repeat(40));
+    const subtotal = parseFloat(order.total_amount);
+    const discount = parseFloat(order.discount_amount || 0);
+    doc.text(`Tạm tính: ${subtotal.toLocaleString()}đ`, { align: "right" });
+    if (discount > 0) doc.text(`Giảm giá: -${discount.toLocaleString()}đ`, { align: "right" });
+    doc.fontSize(14).text(`TỔNG: ${(subtotal - discount).toLocaleString()}đ`, { align: "right" });
+    doc.moveDown(2).fontSize(10).text("Cảm ơn quý khách!", { align: "center" });
+
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+};

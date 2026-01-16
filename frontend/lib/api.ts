@@ -246,8 +246,8 @@ export const menuAPI = {
   getCategories: () => fetchAPI<{ data: any[] }>("/menu/categories"),
 
   // Get all menu items
-  getItems: (categoryId?: string) => {
-    const query = categoryId ? `?category=${categoryId}` : "";
+  getItems: (params?: string) => {
+    const query = params ? `?${params}` : "";
     return fetchAPI<{ data: any[] }>(`/menu/items${query}`);
   },
 

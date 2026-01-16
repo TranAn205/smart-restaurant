@@ -30,4 +30,10 @@ router.patch("/:id/attach-customer", ordersController.attachCustomer);
 // POST /api/orders/:id/request-bill - Request bill from waiter
 router.post("/:id/request-bill", ordersController.requestBill);
 
+// PATCH /api/orders/:id/discount - Apply discount (Admin/Waiter)
+router.patch("/:id/discount", ordersController.applyDiscount);
+
+// GET /api/orders/:id/bill/pdf - Download bill as PDF
+router.get("/:id/bill/pdf", ordersController.generateBillPDF);
+
 module.exports = router;
