@@ -149,10 +149,29 @@ exports.getItems = async (req, res, next) => {
     }
 
     // Sorting
-    const validSorts = ["price", "name", "created_at"];
-    const sortCol = validSorts.includes(sort) ? `i.${sort}` : "i.created_at";
-    const sortDir = order === "asc" ? "ASC" : "DESC";
-    itemQuery += ` ORDER BY ${sortCol} ${sortDir}`;
+    const validSorts = ["price", "name", "created_at", "popularity"];
+    let sortClause = "i.created_at DESC"; // Default
+    
+    if (sort === "popularity") {
+      // Add LEFT JOIN for order count
+      itemQuery = itemQuery.replace(
+        ") r ON i.id = r.menu_item_id",
+        `) r ON i.id = r.menu_item_id
+      LEFT JOIN (
+        SELECT oi.menu_item_id, COUNT(*) as order_count
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+        GROUP BY oi.menu_item_id
+      ) order_stats ON i.id = order_stats.menu_item_id`
+      );
+      sortClause = "COALESCE(order_stats.order_count, 0) DESC, i.created_at DESC";
+    } else if (validSorts.includes(sort)) {
+      const sortDir = order === "asc" ? "ASC" : "DESC";
+      sortClause = `i.${sort} ${sortDir}`;
+    }
+    
+    itemQuery += ` ORDER BY ${sortClause}`;
 
     // Pagination
     const limitVal = parseInt(limit);
