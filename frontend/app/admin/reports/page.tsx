@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import html2canvas from "html2canvas";
 
 interface DailyReport {
   date: string;
@@ -50,6 +51,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Stats
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -122,8 +124,8 @@ export default function ReportsPage() {
     }
   }, [startDate, endDate]);
 
-  // Export to PDF
-  const handleExportPDF = () => {
+  // Export to PDF with chart
+  const handleExportPDF = async () => {
     try {
       const doc = new jsPDF();
       
@@ -153,16 +155,34 @@ export default function ReportsPage() {
       doc.text(`Tong don hang: ${totalOrders}`, 14, 50);
       doc.text(`Gia tri trung binh: ${pdfPrice(avgOrderValue)}`, 14, 58);
       
+      // Capture chart image
+      let chartEndY = 68;
+      if (chartRef.current && dailyReports.length > 0) {
+        try {
+          const canvas = await html2canvas(chartRef.current, {
+            backgroundColor: "#1F2937",
+            scale: 2,
+          });
+          const imgData = canvas.toDataURL("image/png");
+          doc.setFontSize(14);
+          doc.text("Bieu do Doanh thu", 14, 72);
+          doc.addImage(imgData, "PNG", 14, 76, 180, 80);
+          chartEndY = 160;
+        } catch (chartError) {
+          console.error("Chart capture error:", chartError);
+        }
+      }
+      
       // Daily Revenue Table
       if (dailyReports.length > 0) {
         doc.setFontSize(14);
-        doc.text("Doanh thu theo ngay", 14, 72);
+        doc.text("Doanh thu theo ngay", 14, chartEndY + 10);
         
         autoTable(doc, {
-          startY: 76,
+          startY: chartEndY + 14,
           head: [["Ngay", "So don", "Doanh thu"]],
           body: dailyReports.map((day) => [
-            day.date.split("T")[0], // Simple date format YYYY-MM-DD
+            day.date.split("T")[0],
             day.total_orders,
             pdfPrice(parseFloat(day.revenue)),
           ]),
@@ -173,7 +193,7 @@ export default function ReportsPage() {
       
       // Top Items Table
       if (topItems.length > 0) {
-        const finalY = (doc as any).lastAutoTable?.finalY || 100;
+        const finalY = (doc as any).lastAutoTable?.finalY || chartEndY + 50;
         doc.setFontSize(14);
         doc.text("Mon ban chay", 14, finalY + 15);
         
@@ -192,7 +212,7 @@ export default function ReportsPage() {
       }
       
       doc.save(`bao-cao-${startDate}-${endDate}.pdf`);
-      toast({ title: "Thanh cong", description: "Da xuat file PDF" });
+      toast({ title: "Thanh cong", description: "Da xuat file PDF voi bieu do" });
     } catch (error) {
       console.error("PDF export error:", error);
       toast({ title: "Loi", description: "Khong the xuat PDF", variant: "destructive" });
@@ -464,7 +484,7 @@ export default function ReportsPage() {
                   Không có dữ liệu trong khoảng thời gian này
                 </p>
               ) : (
-                <div className="h-80">
+                <div className="h-80" ref={chartRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={dailyReports.slice(0, 14).map((day) => ({
