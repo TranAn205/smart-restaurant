@@ -219,7 +219,7 @@ export default function MenuItemsPage() {
   };
 
   // Toggle item selection
-  const toggleItemSelection = (itemId: number) => {
+  const toggleItemSelection = (itemId: string) => {
     setSelectedItems((prev) =>
       prev.includes(itemId)
         ? prev.filter((id) => id !== itemId)
@@ -344,7 +344,7 @@ export default function MenuItemsPage() {
     }
   };
 
-  const handleDeletePhoto = async (photoId: number) => {
+  const handleDeletePhoto = async (photoId: string) => {
     if (!managingItem) return;
     if (!confirm("Delete this photo?")) return;
 
@@ -365,7 +365,7 @@ export default function MenuItemsPage() {
     }
   };
 
-  const handleSetPrimaryPhoto = async (photoId: number) => {
+  const handleSetPrimaryPhoto = async (photoId: string) => {
     if (!managingItem) return;
 
     try {

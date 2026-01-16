@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Clock, CheckCircle, Loader2, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BottomNavigation } from "@/components/guest/bottom-navigation";
@@ -206,20 +206,33 @@ export default function OrderHistoryPage() {
                           </p>
                         )}
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-transparent"
-                        onClick={() =>
-                          router.push(
-                            isPaid
-                              ? `/guest/payment/${order.id}`
-                              : `/guest/orders/${order.id}`
-                          )
-                        }
-                      >
-                        {isPaid ? "Xem hóa đơn" : "Theo dõi"}
-                      </Button>
+                      <div className="flex gap-2">
+                        {isPaid && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-transparent"
+                            onClick={() => router.push("/guest/review")}
+                          >
+                            <Star className="mr-1 h-3 w-3" />
+                            Đánh giá
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-transparent"
+                          onClick={() =>
+                            router.push(
+                              isPaid
+                                ? `/guest/payment/${order.id}`
+                                : `/guest/orders/${order.id}`
+                            )
+                          }
+                        >
+                          {isPaid ? "Xem hóa đơn" : "Theo dõi"}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
