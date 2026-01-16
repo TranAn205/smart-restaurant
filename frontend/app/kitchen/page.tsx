@@ -315,17 +315,6 @@ export default function KitchenDisplayPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-          >
-            {isSoundEnabled ? (
-              <Volume2 className="h-4 w-4" />
-            ) : (
-              <VolumeX className="h-4 w-4" />
-            )}
-          </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
           </Button>
