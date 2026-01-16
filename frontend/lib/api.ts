@@ -706,6 +706,10 @@ export const reviewsAPI = {
   // Get reviews for item
   getItemReviews: (itemId: string) =>
     fetchAPI<{ data: any[] }>(`/menu/reviews/${itemId}`),
+
+  // Get current customer's reviews
+  getMyReviews: () =>
+    fetchAPI<any[]>("/menu/my-reviews"),
 };
 
 export default {

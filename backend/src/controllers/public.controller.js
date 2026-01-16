@@ -111,14 +111,23 @@ exports.getItems = async (req, res, next) => {
       order = "desc",
     } = req.query;
 
-    // Build Query Lấy Món Ăn
+    // Build Query Lấy Món Ăn with Review Stats
     let itemQuery = `
       SELECT 
         i.*, 
-        p.photo_url as primary_photo 
+        p.photo_url as primary_photo,
+        COALESCE(r.avg_rating, 0) as rating,
+        COALESCE(r.review_count, 0) as reviews
       FROM menu_items i
       JOIN menu_categories c ON i.category_id = c.id
       LEFT JOIN menu_item_photos p ON i.id = p.menu_item_id AND p.is_primary = true
+      LEFT JOIN (
+        SELECT menu_item_id, 
+               ROUND(AVG(rating)::numeric, 1) as avg_rating, 
+               COUNT(*) as review_count
+        FROM reviews
+        GROUP BY menu_item_id
+      ) r ON i.id = r.menu_item_id
       WHERE i.deleted_at IS NULL 
         AND i.status IN ('available', 'sold_out')
         AND c.status = 'active'
