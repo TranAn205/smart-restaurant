@@ -7,7 +7,6 @@ import {
   ChefHat,
   Bell,
   X,
-  RefreshCw,
   Volume2,
   VolumeX,
   Loader2,
@@ -326,9 +325,6 @@ export default function KitchenDisplayPage() {
             ) : (
               <VolumeX className="h-4 w-4" />
             )}
-          </Button>
-          <Button variant="outline" size="icon" onClick={fetchOrders}>
-            <RefreshCw className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
