@@ -13,10 +13,15 @@ import {
   Package,
   DollarSign,
   RefreshCw,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 interface DailyReport {
   date: string;
@@ -107,6 +112,123 @@ export default function ReportsPage() {
     }
   }, [startDate, endDate]);
 
+  // Export to PDF
+  const handleExportPDF = () => {
+    try {
+      const doc = new jsPDF();
+      
+      // Title
+      doc.setFontSize(18);
+      doc.text("Báo cáo Doanh thu", 14, 22);
+      doc.setFontSize(11);
+      doc.text(`Từ: ${startDate} - Đến: ${endDate}`, 14, 30);
+      
+      // Summary
+      doc.setFontSize(12);
+      doc.text(`Tổng doanh thu: ${formatPrice(totalRevenue)}`, 14, 42);
+      doc.text(`Tổng đơn hàng: ${totalOrders}`, 14, 50);
+      doc.text(`Giá trị trung bình: ${formatPrice(avgOrderValue)}`, 14, 58);
+      
+      // Daily Revenue Table
+      if (dailyReports.length > 0) {
+        doc.setFontSize(14);
+        doc.text("Doanh thu theo ngày", 14, 72);
+        
+        autoTable(doc, {
+          startY: 76,
+          head: [["Ngày", "Số đơn", "Doanh thu"]],
+          body: dailyReports.map((day) => [
+            new Date(day.date).toLocaleDateString("vi-VN"),
+            day.total_orders,
+            formatPrice(parseFloat(day.revenue)),
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [249, 115, 22] },
+        });
+      }
+      
+      // Top Items Table
+      if (topItems.length > 0) {
+        const finalY = (doc as any).lastAutoTable?.finalY || 100;
+        doc.setFontSize(14);
+        doc.text("Món bán chạy", 14, finalY + 15);
+        
+        autoTable(doc, {
+          startY: finalY + 19,
+          head: [["#", "Tên món", "Số lượng", "Doanh thu"]],
+          body: topItems.map((item, idx) => [
+            idx + 1,
+            item.name,
+            item.total_sold,
+            formatPrice(parseFloat(item.revenue)),
+          ]),
+          styles: { fontSize: 10 },
+          headStyles: { fillColor: [249, 115, 22] },
+        });
+      }
+      
+      doc.save(`bao-cao-${startDate}-${endDate}.pdf`);
+      toast({ title: "Thành công", description: "Đã xuất file PDF" });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({ title: "Lỗi", description: "Không thể xuất PDF", variant: "destructive" });
+    }
+  };
+
+  // Export to Excel
+  const handleExportExcel = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      
+      // Summary sheet
+      const summaryData = [
+        ["BÁO CÁO DOANH THU"],
+        [`Từ: ${startDate}`, `Đến: ${endDate}`],
+        [],
+        ["Tổng doanh thu", totalRevenue],
+        ["Tổng đơn hàng", totalOrders],
+        ["Giá trị trung bình", avgOrderValue],
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng quan");
+      
+      // Daily Revenue sheet
+      if (dailyReports.length > 0) {
+        const dailyData = [
+          ["Ngày", "Số đơn hàng", "Doanh thu"],
+          ...dailyReports.map((day) => [
+            new Date(day.date).toLocaleDateString("vi-VN"),
+            parseInt(day.total_orders),
+            parseFloat(day.revenue),
+          ]),
+        ];
+        const wsDaily = XLSX.utils.aoa_to_sheet(dailyData);
+        XLSX.utils.book_append_sheet(wb, wsDaily, "Doanh thu theo ngày");
+      }
+      
+      // Top Items sheet
+      if (topItems.length > 0) {
+        const topData = [
+          ["STT", "Tên món", "Số lượng bán", "Doanh thu"],
+          ...topItems.map((item, idx) => [
+            idx + 1,
+            item.name,
+            parseInt(item.total_sold),
+            parseFloat(item.revenue),
+          ]),
+        ];
+        const wsTop = XLSX.utils.aoa_to_sheet(topData);
+        XLSX.utils.book_append_sheet(wb, wsTop, "Món bán chạy");
+      }
+      
+      XLSX.writeFile(wb, `bao-cao-${startDate}-${endDate}.xlsx`);
+      toast({ title: "Thành công", description: "Đã xuất file Excel" });
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast({ title: "Lỗi", description: "Không thể xuất Excel", variant: "destructive" });
+    }
+  };
+
 
 
   return (
@@ -130,6 +252,14 @@ export default function ReportsPage() {
                 className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
               />
               Làm mới
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={loading}>
+              <FileText className="mr-2 h-4 w-4" />
+              Xuất PDF
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={loading}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Xuất Excel
             </Button>
           </div>
         </div>
