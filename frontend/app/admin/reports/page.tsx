@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/admin/admin-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,17 @@ import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import html2canvas from "html2canvas";
 
 interface DailyReport {
   date: string;
@@ -40,6 +51,7 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Stats
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -112,8 +124,8 @@ export default function ReportsPage() {
     }
   }, [startDate, endDate]);
 
-  // Export to PDF
-  const handleExportPDF = () => {
+  // Export to PDF with chart
+  const handleExportPDF = async () => {
     try {
       const doc = new jsPDF();
       
@@ -143,16 +155,34 @@ export default function ReportsPage() {
       doc.text(`Tong don hang: ${totalOrders}`, 14, 50);
       doc.text(`Gia tri trung binh: ${pdfPrice(avgOrderValue)}`, 14, 58);
       
+      // Capture chart image
+      let chartEndY = 68;
+      if (chartRef.current && dailyReports.length > 0) {
+        try {
+          const canvas = await html2canvas(chartRef.current, {
+            backgroundColor: "#1F2937",
+            scale: 2,
+          });
+          const imgData = canvas.toDataURL("image/png");
+          doc.setFontSize(14);
+          doc.text("Bieu do Doanh thu", 14, 72);
+          doc.addImage(imgData, "PNG", 14, 76, 180, 80);
+          chartEndY = 160;
+        } catch (chartError) {
+          console.error("Chart capture error:", chartError);
+        }
+      }
+      
       // Daily Revenue Table
       if (dailyReports.length > 0) {
         doc.setFontSize(14);
-        doc.text("Doanh thu theo ngay", 14, 72);
+        doc.text("Doanh thu theo ngay", 14, chartEndY + 10);
         
         autoTable(doc, {
-          startY: 76,
+          startY: chartEndY + 14,
           head: [["Ngay", "So don", "Doanh thu"]],
           body: dailyReports.map((day) => [
-            day.date.split("T")[0], // Simple date format YYYY-MM-DD
+            day.date.split("T")[0],
             day.total_orders,
             pdfPrice(parseFloat(day.revenue)),
           ]),
@@ -163,7 +193,7 @@ export default function ReportsPage() {
       
       // Top Items Table
       if (topItems.length > 0) {
-        const finalY = (doc as any).lastAutoTable?.finalY || 100;
+        const finalY = (doc as any).lastAutoTable?.finalY || chartEndY + 50;
         doc.setFontSize(14);
         doc.text("Mon ban chay", 14, finalY + 15);
         
@@ -182,7 +212,7 @@ export default function ReportsPage() {
       }
       
       doc.save(`bao-cao-${startDate}-${endDate}.pdf`);
-      toast({ title: "Thanh cong", description: "Da xuat file PDF" });
+      toast({ title: "Thanh cong", description: "Da xuat file PDF voi bieu do" });
     } catch (error) {
       console.error("PDF export error:", error);
       toast({ title: "Loi", description: "Khong the xuat PDF", variant: "destructive" });
@@ -439,53 +469,94 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
 
-          {/* Daily Revenue */}
+          {/* Daily Revenue Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Daily Revenue</CardTitle>
+              <CardTitle>Biểu đồ Doanh thu</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-4 w-28" />
-                    </div>
-                  ))}
+                <div className="h-80 flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
                 </div>
               ) : dailyReports.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
                   Không có dữ liệu trong khoảng thời gian này
                 </p>
               ) : (
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {dailyReports.slice(0, 10).map((day) => {
-                    const maxRevenue = Math.max(...dailyReports.map(d => parseFloat(d.revenue) || 0));
-                    const revenue = parseFloat(day.revenue) || 0;
-                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
-                    
-                    return (
-                      <div
-                        key={day.date}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="w-20 text-sm text-muted-foreground">
-                          {new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
-                        </span>
-                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="w-20 text-sm font-medium text-right">
-                          {formatPrice(revenue)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="h-80" ref={chartRef}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyReports.slice(0, 14).map((day) => ({
+                        date: new Date(day.date).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        }),
+                        revenue: parseFloat(day.revenue) || 0,
+                        orders: parseInt(day.total_orders) || 0,
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                        tickFormatter={(value) =>
+                          value >= 1000000
+                            ? `${(value / 1000000).toFixed(1)}M`
+                            : value >= 1000
+                            ? `${(value / 1000).toFixed(0)}K`
+                            : value
+                        }
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1F2937",
+                          border: "1px solid #374151",
+                          borderRadius: "8px",
+                        }}
+                        labelStyle={{ color: "#F9FAFB" }}
+                        formatter={(value, name) => [
+                          name === "revenue"
+                            ? formatPrice(Number(value))
+                            : `${value} đơn`,
+                          name === "revenue" ? "Doanh thu" : "Số đơn",
+                        ]}
+                      />
+                      <Legend />
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="revenue"
+                        name="Doanh thu"
+                        stroke="#F97316"
+                        strokeWidth={3}
+                        dot={{ fill: "#F97316", strokeWidth: 2 }}
+                        activeDot={{ r: 8 }}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="orders"
+                        name="Số đơn"
+                        stroke="#3B82F6"
+                        strokeWidth={2}
+                        dot={{ fill: "#3B82F6", strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </CardContent>
