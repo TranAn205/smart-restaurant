@@ -22,6 +22,16 @@ import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 interface DailyReport {
   date: string;
@@ -439,53 +449,94 @@ export default function ReportsPage() {
             </CardContent>
           </Card>
 
-          {/* Daily Revenue */}
+          {/* Daily Revenue Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>Daily Revenue</CardTitle>
+              <CardTitle>Biểu đồ Doanh thu</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="space-y-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <div key={i} className="flex items-center justify-between">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-4 w-20" />
-                      <Skeleton className="h-4 w-28" />
-                    </div>
-                  ))}
+                <div className="h-80 flex items-center justify-center">
+                  <Skeleton className="h-full w-full" />
                 </div>
               ) : dailyReports.length === 0 ? (
                 <p className="py-8 text-center text-muted-foreground">
                   Không có dữ liệu trong khoảng thời gian này
                 </p>
               ) : (
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {dailyReports.slice(0, 10).map((day) => {
-                    const maxRevenue = Math.max(...dailyReports.map(d => parseFloat(d.revenue) || 0));
-                    const revenue = parseFloat(day.revenue) || 0;
-                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
-                    
-                    return (
-                      <div
-                        key={day.date}
-                        className="flex items-center gap-3"
-                      >
-                        <span className="w-20 text-sm text-muted-foreground">
-                          {new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
-                        </span>
-                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="w-20 text-sm font-medium text-right">
-                          {formatPrice(revenue)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyReports.slice(0, 14).map((day) => ({
+                        date: new Date(day.date).toLocaleDateString("vi-VN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                        }),
+                        revenue: parseFloat(day.revenue) || 0,
+                        orders: parseInt(day.total_orders) || 0,
+                      }))}
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                        tickFormatter={(value) =>
+                          value >= 1000000
+                            ? `${(value / 1000000).toFixed(1)}M`
+                            : value >= 1000
+                            ? `${(value / 1000).toFixed(0)}K`
+                            : value
+                        }
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                        stroke="#4B5563"
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#1F2937",
+                          border: "1px solid #374151",
+                          borderRadius: "8px",
+                        }}
+                        labelStyle={{ color: "#F9FAFB" }}
+                        formatter={(value: number, name: string) => [
+                          name === "revenue"
+                            ? formatPrice(value)
+                            : `${value} đơn`,
+                          name === "revenue" ? "Doanh thu" : "Số đơn",
+                        ]}
+                      />
+                      <Legend />
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="revenue"
+                        name="Doanh thu"
+                        stroke="#F97316"
+                        strokeWidth={3}
+                        dot={{ fill: "#F97316", strokeWidth: 2 }}
+                        activeDot={{ r: 8 }}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="orders"
+                        name="Số đơn"
+                        stroke="#3B82F6"
+                        strokeWidth={2}
+                        dot={{ fill: "#3B82F6", strokeWidth: 2 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </CardContent>
