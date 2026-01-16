@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { BottomNavigation } from "@/components/guest/bottom-navigation";
 import { CartDrawer } from "@/components/guest/cart-drawer";
 import { CategoryTabs } from "@/components/guest/category-tabs";
@@ -18,6 +19,8 @@ import { menuAPI, getImageUrl } from "@/lib/api";
 export default function GuestMenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<"created_at" | "popularity">("created_at");
+  const [chefRecommended, setChefRecommended] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -28,10 +31,13 @@ export default function GuestMenuPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [tableNumber, setTableNumber] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const itemsPerPage = 12;
 
   const { dispatch } = useCart();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const currentPage = parseInt(searchParams.get('page') || '1');
 
   const fetchData = async () => {
     setLoading(true);
@@ -64,8 +70,26 @@ export default function GuestMenuPage() {
         setCategories(apiCategories);
       }
 
-      // Fetch menu items
-      const itemsRes = await menuAPI.getItems();
+      // Fetch menu items with pagination params
+      const params = new URLSearchParams();
+      params.set('page', currentPage.toString());
+      params.set('limit', itemsPerPage.toString());
+      if (activeCategory && activeCategory !== 'all') {
+        params.set('categoryId', activeCategory);
+      }
+      if (searchQuery) {
+        params.set('q', searchQuery);
+      }
+      // Sort by popularity or creation date
+      if (sortBy === 'popularity') {
+        params.set('sort', 'popularity');
+      }
+      // Filter by chef recommendation
+      if (chefRecommended) {
+        params.set('chefRecommended', 'true');
+      }
+
+      const itemsRes = await menuAPI.getItems(params.toString());
       if (itemsRes.data && itemsRes.data.length > 0) {
         const apiItems: MenuItem[] = itemsRes.data.map((item: any) => {
           const mappedItem = {
@@ -97,6 +121,13 @@ export default function GuestMenuPage() {
           return mappedItem;
         });
         setMenuItems(apiItems);
+        
+        // Update total pages from pagination data
+        if (itemsRes.pagination || itemsRes.total) {
+          // Calculate from backend if provided, or use items length
+          const total = (itemsRes as any).total || apiItems.length;
+          setTotalPages(Math.ceil(total / itemsPerPage));
+        }
       }
     } catch (err: any) {
       console.error("API Error:", err);
@@ -110,12 +141,16 @@ export default function GuestMenuPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage, activeCategory, searchQuery, sortBy, chefRecommended]);
 
   // Reset page when search or category changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, activeCategory]);
+    if (currentPage !== 1) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('page', '1');
+      router.push(`?${params.toString()}`);
+    }
+  }, [searchQuery, activeCategory, sortBy, chefRecommended]);
 
   // Simple fuzzy search function
   const fuzzyMatch = (text: string, query: string): boolean => {
@@ -145,23 +180,8 @@ export default function GuestMenuPage() {
     });
   };
 
-  const filteredItems = useMemo(() => {
-    return menuItems.filter((item) => {
-      const matchesSearch = 
-        fuzzyMatch(item.name, searchQuery) ||
-        fuzzyMatch(item.description, searchQuery);
-      const matchesCategory =
-        activeCategory === "all" || item.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [menuItems, searchQuery, activeCategory]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const paginatedItems = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredItems.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredItems, currentPage]);
+  // No need for client-side filtering - backend handles it
+  const paginatedItems = menuItems;
 
   const handleQuickAdd = (item: MenuItem) => {
     if (item.modifiers && item.modifiers.length > 0) {
@@ -219,6 +239,10 @@ export default function GuestMenuPage() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         tableId={tableNumber}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        chefRecommended={chefRecommended}
+        onChefRecommendedChange={setChefRecommended}
       />
 
       <CategoryTabs
@@ -245,7 +269,7 @@ export default function GuestMenuPage() {
               Thử lại
             </button>
           </div>
-        ) : filteredItems.length === 0 ? (
+        ) : menuItems.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-muted-foreground">
               Không tìm thấy món ăn phù hợp
@@ -271,7 +295,11 @@ export default function GuestMenuPage() {
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-2">
                 <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('page', Math.max(1, currentPage - 1).toString());
+                    router.push(`?${params.toString()}`);
+                  }}
                   disabled={currentPage === 1}
                   className="px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                 >
@@ -281,7 +309,11 @@ export default function GuestMenuPage() {
                   Trang {currentPage} / {totalPages}
                 </span>
                 <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.set('page', Math.min(totalPages, currentPage + 1).toString());
+                    router.push(`?${params.toString()}`);
+                  }}
                   disabled={currentPage === totalPages}
                   className="px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
                 >

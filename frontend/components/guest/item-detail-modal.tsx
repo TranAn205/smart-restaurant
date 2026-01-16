@@ -33,6 +33,8 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
   const [notes, setNotes] = useState("")
   const [reviews, setReviews] = useState<Review[]>([])
   const [loadingReviews, setLoadingReviews] = useState(false)
+  const [relatedItems, setRelatedItems] = useState<MenuItem[]>([])
+  const [loadingRelated, setLoadingRelated] = useState(false)
 
   // Fetch reviews when item changes
   useEffect(() => {
@@ -42,6 +44,27 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
         .then((res) => setReviews(res.data || res || []))
         .catch(() => setReviews([]))
         .finally(() => setLoadingReviews(false))
+    }
+  }, [item, isOpen])
+
+  // Fetch related items when item changes
+  useEffect(() => {
+    if (item && isOpen) {
+      setLoadingRelated(true)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/menu/items/${item.id}/related`)
+        .then(res => res.json())
+        .then(data => {
+          // Map primary_photo to image field for consistency
+          const mappedItems = (data.data || []).map((relatedItem: any) => ({
+            ...relatedItem,
+            image: relatedItem.primary_photo ? 
+              (relatedItem.primary_photo.startsWith('http') ? relatedItem.primary_photo : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000'}${relatedItem.primary_photo}`) 
+              : '/placeholder.svg'
+          }));
+          setRelatedItems(mappedItems);
+        })
+        .catch(() => setRelatedItems([]))
+        .finally(() => setLoadingRelated(false))
     }
   }, [item, isOpen])
 
@@ -206,6 +229,51 @@ export function ItemDetailModal({ item, isOpen, onClose, onAddToCart }: ItemDeta
               </div>
             )}
           </div>
+
+          {/* Related Items Section */}
+          {relatedItems.length > 0 && (
+            <div className="mt-6 border-t border-border pt-4">
+              <h3 className="font-medium text-card-foreground mb-3">Món tương tự</h3>
+              <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+                {relatedItems.map((relatedItem) => (
+                  <div
+                    key={relatedItem.id}
+                    className="flex-none w-32 cursor-pointer group"
+                    onClick={() => {
+                      // Close current modal and re-open with new item
+                      onClose();
+                      setTimeout(() => {
+                        // This will trigger parent to open modal with new item
+                        const event = new CustomEvent('openItemDetail', { detail: relatedItem });
+                        window.dispatchEvent(event);
+                      }, 100);
+                    }}
+                  >
+                    <div className="aspect-square rounded-lg overflow-hidden bg-muted relative">
+                      <Image 
+                        src={relatedItem.image || "/placeholder.svg"} 
+                        alt={relatedItem.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform"
+                      />
+                    </div>
+                    <p className="text-xs font-medium mt-1 line-clamp-2 text-card-foreground">
+                      {relatedItem.name}
+                    </p>
+                    <div className="flex items-center justify-between mt-0.5">
+                      <span className="text-xs font-semibold text-primary">
+                        {formatPrice(relatedItem.price)}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <Star className="h-3 w-3 fill-warning text-warning" />
+                        <span className="text-xs text-muted-foreground">{relatedItem.rating}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-4">
             <h3 className="font-medium text-card-foreground">Ghi chú</h3>

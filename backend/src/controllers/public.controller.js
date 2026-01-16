@@ -149,10 +149,29 @@ exports.getItems = async (req, res, next) => {
     }
 
     // Sorting
-    const validSorts = ["price", "name", "created_at"];
-    const sortCol = validSorts.includes(sort) ? `i.${sort}` : "i.created_at";
-    const sortDir = order === "asc" ? "ASC" : "DESC";
-    itemQuery += ` ORDER BY ${sortCol} ${sortDir}`;
+    const validSorts = ["price", "name", "created_at", "popularity"];
+    let sortClause = "i.created_at DESC"; // Default
+    
+    if (sort === "popularity") {
+      // Add LEFT JOIN for order count
+      itemQuery = itemQuery.replace(
+        ") r ON i.id = r.menu_item_id",
+        `) r ON i.id = r.menu_item_id
+      LEFT JOIN (
+        SELECT oi.menu_item_id, COUNT(*) as order_count
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE o.status != 'cancelled'
+        GROUP BY oi.menu_item_id
+      ) order_stats ON i.id = order_stats.menu_item_id`
+      );
+      sortClause = "COALESCE(order_stats.order_count, 0) DESC, i.created_at DESC";
+    } else if (validSorts.includes(sort)) {
+      const sortDir = order === "asc" ? "ASC" : "DESC";
+      sortClause = `i.${sort} ${sortDir}`;
+    }
+    
+    itemQuery += ` ORDER BY ${sortClause}`;
 
     // Pagination
     const limitVal = parseInt(limit);
@@ -230,6 +249,64 @@ exports.getItems = async (req, res, next) => {
       data: items,
       pagination: { page: parseInt(page), limit: limitVal },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
+ * GET /api/menu/items/:id/related
+ * Get related menu items (same category)
+ */
+exports.getRelatedItems = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit) || 4;
+
+    // Get current item's category
+    const itemRes = await db.query(
+      'SELECT category_id FROM menu_items WHERE id = $1 AND deleted_at IS NULL',
+      [id]
+    );
+
+    if (itemRes.rowCount === 0) {
+      return res.status(404).json({ message: 'Item not found' });
+    }
+
+    const categoryId = itemRes.rows[0].category_id;
+
+    // Get random items from same category, excluding current item
+    const { rows } = await db.query(
+      `
+      SELECT 
+        i.id, 
+        i.name, 
+        i.price, 
+        i.status,
+        i.description,
+        p.photo_url as primary_photo,
+        COALESCE(r.avg_rating, 0) as rating,
+        COALESCE(r.review_count, 0) as reviews
+      FROM menu_items i
+      LEFT JOIN menu_item_photos p ON i.id = p.menu_item_id AND p.is_primary = true
+      LEFT JOIN (
+        SELECT menu_item_id, 
+               ROUND(AVG(rating)::numeric, 1) as avg_rating, 
+               COUNT(*) as review_count
+        FROM reviews
+        GROUP BY menu_item_id
+      ) r ON i.id = r.menu_item_id
+      WHERE i.category_id = $1 
+        AND i.id != $2 
+        AND i.deleted_at IS NULL
+        AND i.status = 'available'
+      ORDER BY RANDOM()
+      LIMIT $3
+      `,
+      [categoryId, id, limit]
+    );
+
+    res.json({ data: rows });
   } catch (err) {
     next(err);
   }
