@@ -205,7 +205,7 @@ export default function TablesPage() {
       try {
         const result = await adminAPI.tables.generateQR(table.id);
         setQrImageUrl(result.qrImageDataUrl);
-        fetchTables();
+        fetchTables(); // Refresh to get updated qr_token
       } catch (error: any) {
         toast({
           title: "Error",
