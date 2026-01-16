@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 import {
   Clock,
   ChefHat,
@@ -47,7 +48,7 @@ interface KitchenOrder {
 }
 
 const statusColumns = [
-  { key: "pending", label: "Chờ nấu", icon: Clock, color: "bg-warning" },
+  { key: "accepted", label: "Chờ nấu", icon: Clock, color: "bg-warning" },
   { key: "preparing", label: "Đang nấu", icon: ChefHat, color: "bg-primary" },
   { key: "ready", label: "Sẵn sàng", icon: Bell, color: "bg-success" },
 ];
@@ -111,11 +112,72 @@ export default function KitchenDisplayPage() {
     return () => clearInterval(interval);
   }, [fetchOrders, router]); // Dependency array gộp chung
 
+  // Sound notification function (moved before Socket.IO useEffect)
+  const playNotificationSound = useCallback(() => {
+    if (!isSoundEnabled) return;
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.log("Audio not available");
+    }
+  }, [isSoundEnabled]);
+
   useEffect(() => {
     // Update time every second for elapsed time display
     const timeInterval = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timeInterval);
   }, []);
+
+  // Socket.IO real-time updates
+  useEffect(() => {
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:4000';
+    const socket: Socket = io(BACKEND_URL);
+
+    // Join kitchen room
+    socket.emit('join:role', 'kitchen');
+    console.log('🍳 Kitchen connected to Socket.IO');
+
+    // Listen for new orders from waiter
+    socket.on('order:new_task', (data) => {
+      console.log('📥 New order from waiter:', data);
+      fetchOrders();
+      playNotificationSound();
+      toast({
+        title: "Đơn hàng mới!",
+        description: `Bàn ${data.table_number || 'N/A'}`,
+      });
+    });
+
+    // Listen for order updates
+    socket.on('order:updated', (data) => {
+      console.log('🔄 Order updated:', data);
+      fetchOrders();
+    });
+
+    // Listen for order status changes
+    socket.on('order:update', (data) => {
+      console.log('📝 Order status update:', data);
+      fetchOrders();
+    });
+
+    return () => {
+      console.log('🔌 Kitchen disconnecting from Socket.IO');
+      socket.disconnect();
+    };
+  }, [fetchOrders, playNotificationSound, toast]);
 
   const getElapsedTime = (createdAt: string) => {
     const created = new Date(createdAt);
@@ -155,28 +217,6 @@ export default function KitchenDisplayPage() {
     }
   };
 
-  // Sound notification function
-  const playNotificationSound = useCallback(() => {
-    if (!isSoundEnabled) return;
-    try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = "sine";
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (error) {
-      console.log("Audio not available");
-    }
-  }, [isSoundEnabled]);
 
   const handleItemStatusChange = async (itemId: string, newStatus: string) => {
     try {
@@ -404,7 +444,7 @@ export default function KitchenDisplayPage() {
 
                       {/* Actions */}
                       <div className="flex gap-2">
-                        {column.key === "pending" && (
+                        {column.key === "accepted" && (
                           <Button
                             className="flex-1"
                             size="sm"
