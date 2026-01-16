@@ -41,17 +41,21 @@ async function fetchAPI<T>(
 
     let token = "";
 
-    // Nếu endpoint bắt đầu bằng /customer hoặc /auth/customer -> Ưu tiên token khách
-    if (endpoint.startsWith("/customer") || endpoint.startsWith("/auth/customer")) {
-        token = customerToken || "";
-    } 
     // Nếu endpoint bắt đầu bằng /admin -> Ưu tiên token admin
-    else if (endpoint.startsWith("/admin")) {
+    if (endpoint.startsWith("/admin")) {
         token = adminToken || "";
     }
-    // Các trường hợp còn lại (như /auth/google, /orders...), lấy theo thứ tự ưu tiên hoặc token chung
+    // Nếu endpoint bắt đầu bằng /kitchen -> Ưu tiên token kitchen
+    else if (endpoint.startsWith("/kitchen")) {
+        token = kitchenToken || "";
+    }
+    // Nếu endpoint bắt đầu bằng /waiter -> Ưu tiên token waiter
+    else if (endpoint.startsWith("/waiter")) {
+        token = waiterToken || "";
+    }
+    // Các trường hợp còn lại (như /orders, /customer, /payment...) -> Ưu tiên customer token
     else {
-        // Fallback: Lấy token nào đang có (ưu tiên customer nếu đang ở trang guest)
+        // Ưu tiên customer token cho các API chung
         token = customerToken || adminToken || kitchenToken || waiterToken || "";
     }
 
@@ -360,12 +364,23 @@ export const waiterAPI = {
 // ==================== PAYMENT API ====================
 
 export const paymentAPI = {
-  // Process payment
-  processPayment: (orderId: string, paymentMethod: string) =>
-    fetchAPI<{ data: any }>(`/payment/orders/${orderId}/pay`, {
+  // Request payment - guest asks for bill
+  requestPayment: (tableId: string, orderIds: string[]) =>
+    fetchAPI<{ message: string; orders: any[]; items: any[]; total: number }>(`/payment/request`, {
       method: "POST",
-      body: JSON.stringify({ paymentMethod }),
+      body: JSON.stringify({ tableId, orderIds }),
     }),
+
+  // Process payment - waiter confirms payment
+  processPayment: (orderId: string, method: string = "cash") =>
+    fetchAPI<{ message: string; order: any }>(`/payment/orders/${orderId}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ method }),
+    }),
+
+  // Get receipt
+  getReceipt: (orderId: string) =>
+    fetchAPI<any>(`/payment/orders/${orderId}/receipt`),
 
   // Get payment status
   getPaymentStatus: (orderId: string) =>
@@ -674,16 +689,16 @@ export const qrAPI = {
 // ==================== REVIEWS API ====================
 
 export const reviewsAPI = {
-  // Submit review
-  submit: (data: { orderId: string; rating: number; comment?: string }) =>
-    fetchAPI<{ data: any }>("/reviews", {
+  // Submit review (requires customer login)
+  submit: (data: { itemId: string; rating: number; comment?: string }) =>
+    fetchAPI<{ data: any }>("/menu/reviews", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   // Get reviews for item
   getItemReviews: (itemId: string) =>
-    fetchAPI<{ data: any[] }>(`/reviews/item/${itemId}`),
+    fetchAPI<{ data: any[] }>(`/menu/reviews/${itemId}`),
 };
 
 export default {

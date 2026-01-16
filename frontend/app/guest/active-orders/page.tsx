@@ -17,6 +17,20 @@ import { BottomNavigation } from "@/components/guest/bottom-navigation";
 import { CartDrawer } from "@/components/guest/cart-drawer";
 import { formatPrice } from "@/lib/menu-data";
 import { orderAPI, customerAPI } from "@/lib/api";
+import { toast } from "sonner";
+import io from "socket.io-client";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
+
+// Prevent external script errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
+      e.preventDefault();
+      return false;
+    }
+  });
+}
 
 interface Order {
   id: string;
@@ -81,22 +95,28 @@ export default function ActiveOrdersPage() {
     try {
       let data: any[] = [];
 
+      console.log("Fetching orders - isLoggedIn:", isLoggedIn, "tableId:", tableId);
+
       // Nếu đã đăng nhập, lấy đơn hàng theo customer
       if (isLoggedIn) {
         const customerOrders = await customerAPI.getOrders();
+        console.log("Customer orders response:", customerOrders);
         // Filter to show only active orders (not paid)
         data = (customerOrders.orders || []).filter(
           (order: any) => order.status !== "paid"
         );
+        console.log("Filtered active orders:", data);
       }
       // Nếu chưa đăng nhập, lấy đơn hàng theo bàn
       else if (tableId) {
         const tableOrders = await orderAPI.getTableOrders(tableId);
+        console.log("Table orders response:", tableOrders);
         // API trả về array trực tiếp hoặc { data: [] }
         const ordersArray = Array.isArray(tableOrders) ? tableOrders : (tableOrders.data || []);
         data = ordersArray.filter(
           (order: any) => order.status !== "paid"
         );
+        console.log("Filtered table orders:", data);
       }
 
       setOrders(data as Order[]);
@@ -136,6 +156,23 @@ export default function ActiveOrdersPage() {
       setIsLoading(false);
     }
   }, [tableId, isLoggedIn]);
+
+  // Fetch on mount and when page becomes visible
+  useEffect(() => {
+    // Fetch immediately when page loads or becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("Page became visible, fetching orders...");
+        fetchOrders();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isLoggedIn, tableId]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);

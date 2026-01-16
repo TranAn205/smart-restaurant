@@ -22,8 +22,20 @@ export default function MenuRedirectPage() {
 
     // Verify QR token with backend
     const verifyQR = async () => {
+      const startTime = Date.now()
       try {
+        console.log("Starting QR verification for table:", tableId)
+        
+        // Add timeout handler
+        const timeoutId = setTimeout(() => {
+          console.warn("QR verification taking longer than expected...")
+        }, 3000)
+
         const result = await qrAPI.verify(tableId, token)
+        clearTimeout(timeoutId)
+        
+        const duration = Date.now() - startTime
+        console.log(`QR verification completed in ${duration}ms`)
         
         if (result.valid) {
           // Store table info in localStorage for guest ordering
@@ -34,14 +46,16 @@ export default function MenuRedirectPage() {
           }))
           localStorage.setItem("tableId", tableId)
           
+          console.log("Table verified, redirecting to menu...")
           // Redirect to guest menu
           router.replace("/menu/guest")
         } else {
           setError("Mã QR không hợp lệ hoặc đã hết hạn")
         }
       } catch (err: any) {
-        console.error("QR verification failed:", err)
-        setError(err.message || "Không thể xác thực mã QR. Vui lòng thử lại.")
+        const duration = Date.now() - startTime
+        console.error(`QR verification failed after ${duration}ms:`, err)
+        setError(err.message || "Không thể xác thực mã QR. Vui lòng kiểm tra kết nối mạng.")
       }
     }
 

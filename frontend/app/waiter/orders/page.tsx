@@ -14,7 +14,11 @@ import {
   Volume2,
   VolumeX,
   CreditCard,
+<<<<<<< HEAD
+  Receipt,
+=======
   Loader2,
+>>>>>>> main
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,10 +40,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPrice } from "@/lib/menu-data";
-import { waiterAPI } from "@/lib/api";
+import { waiterAPI, paymentAPI } from "@/lib/api";
+import io from "socket.io-client";
+import { toast } from "sonner";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.3:4000/api";
+const API_BASE = API_URL.replace("/api", "");
 
 interface OrderItem {
   id: string;
@@ -69,6 +76,16 @@ interface ReadyItem {
   table_number: string;
   order_id: string;
   notes?: string;
+}
+
+interface PaymentRequest {
+  tableId: string;
+  tableNumber: string;
+  orderIds: string[];
+  orders: any[];
+  items: any[];
+  total: number;
+  requestedAt: Date;
 }
 
 const statusConfig = {
@@ -118,6 +135,8 @@ export default function WaiterOrdersPage() {
   );
   const [rejectReason, setRejectReason] = useState("");
   const [waiterName, setWaiterName] = useState("Waiter");
+  const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
+  const [socket, setSocket] = useState<any>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -210,13 +229,65 @@ export default function WaiterOrdersPage() {
     fetchOrders();
     fetchReadyItems();
 
+    // Socket connection
+    const newSocket = io(API_BASE);
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("Waiter connected to socket");
+      newSocket.emit("join:role", "waiter");
+    });
+
+    // Listen for payment requests from pending-payment page
+    newSocket.on("payment:requested", (data: PaymentRequest) => {
+      console.log("Payment requested (from pending-payment):", data);
+      setPaymentRequests(prev => [...prev, data]);
+      
+      // Play notification sound if enabled
+      if (isSoundEnabled) {
+        const audio = new Audio("/notification.mp3");
+        audio.play().catch(e => console.log("Could not play sound:", e));
+      }
+    });
+
+    // Listen for bill requests from order detail page
+    newSocket.on("bill:requested", (data: any) => {
+      console.log("Bill requested (from order detail):", data);
+      // Convert bill request to payment request format
+      const paymentRequest: PaymentRequest = {
+        tableId: data.tableId,
+        tableNumber: data.tableNumber,
+        orderIds: [data.orderId],
+        orders: [],
+        items: [],
+        total: parseFloat(data.total) || 0,
+        requestedAt: new Date(data.requestedAt || Date.now()),
+      };
+      setPaymentRequests(prev => [...prev, paymentRequest]);
+      
+      // Play notification sound if enabled
+      if (isSoundEnabled) {
+        const audio = new Audio("/notification.mp3");
+        audio.play().catch(e => console.log("Could not play sound:", e));
+      }
+    });
+
+    // Listen for payment confirmations
+    newSocket.on("order:paid", () => {
+      fetchOrders(); // Refresh orders
+    });
+
     // Poll for updates every 5 seconds
     const interval = setInterval(() => {
       fetchOrders();
       fetchReadyItems();
     }, 5000);
-    return () => clearInterval(interval);
-  }, [fetchOrders, fetchReadyItems, router]);
+
+    return () => {
+      clearInterval(interval);
+      newSocket.disconnect();
+    };
+  }, [fetchOrders, fetchReadyItems, router, isSoundEnabled]);
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =
@@ -271,29 +342,50 @@ export default function WaiterOrdersPage() {
 
   const handleMarkAsPaid = async (orderId: string) => {
     try {
-      const token = localStorage.getItem("waiterToken");
-      const response = await fetch(
-        `${API_URL}/payment/orders/${orderId}/pay`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ method: "cash" }),
-        }
+      await paymentAPI.processPayment(orderId, "cash");
+      
+      // Remove from payment requests if exists
+      setPaymentRequests(prev => 
+        prev.filter(req => !req.orderIds.includes(orderId))
       );
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || "Failed to mark as paid");
-      }
-
+      
       fetchOrders();
     } catch (error: any) {
       console.error("Error marking as paid:", error);
       alert(error.message || "Có lỗi xảy ra");
     }
+  };
+
+  const handleConfirmPaymentRequest = async (request: PaymentRequest) => {
+    try {
+      // Process all orders in the request
+      for (const orderId of request.orderIds) {
+        await paymentAPI.processPayment(orderId, "cash");
+      }
+      
+      // Remove from payment requests
+      setPaymentRequests(prev => 
+        prev.filter(req => req.tableId !== request.tableId)
+      );
+      
+      fetchOrders();
+      
+      toast.success("Xác nhận thanh toán thành công!", {
+        description: `Đã xác nhận thanh toán cho bàn ${request.tableNumber}`,
+        duration: 3000,
+      });
+    } catch (error: any) {
+      console.error("Error confirming payment:", error);
+      toast.error("Xác nhận thanh toán thất bại", {
+        description: error.message || "Có lỗi xảy ra",
+      });
+    }
+  };
+
+  const handleDismissPaymentRequest = (tableId: string) => {
+    setPaymentRequests(prev => 
+      prev.filter(req => req.tableId !== tableId)
+    );
   };
 
   const handleRejectOrder = () => {
@@ -323,6 +415,18 @@ export default function WaiterOrdersPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {readyOrdersCount > 0 && (
+              <Badge className="bg-success text-success-foreground">
+                <Bell className="mr-1 h-3 w-3" />
+                {readyOrdersCount} ready
+              </Badge>
+            )}
+            {paymentRequests.length > 0 && (
+              <Badge className="bg-orange-500 text-white">
+                <Receipt className="mr-1 h-3 w-3" />
+                {paymentRequests.length} thanh toán
+              </Badge>
+            )}
             <Button
               variant="outline"
               size="icon"
@@ -374,6 +478,81 @@ export default function WaiterOrdersPage() {
         </Select>
       </div>
     </header>
+
+    {/* Payment Requests Alert */}
+    {paymentRequests.length > 0 && (
+      <div className="border-b border-orange-200 bg-gradient-to-r from-orange-50 to-orange-100 p-4">
+        <h3 className="mb-3 flex items-center gap-2 font-semibold text-orange-900">
+          <Receipt className="h-5 w-5" />
+          Yêu cầu thanh toán ({paymentRequests.length})
+        </h3>
+        <div className="space-y-3">
+          {paymentRequests.map((request, index) => (
+            <Card key={index} className="border-orange-300 bg-white shadow-md hover:shadow-lg transition-shadow">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {/* Table Info Header */}
+                  <div className="flex items-center gap-3 pb-2 border-b border-orange-100">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm flex-shrink-0">
+                      <span className="text-lg font-bold text-white">{request.tableNumber}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-lg text-orange-900 truncate">Bàn {request.tableNumber}</p>
+                      <p className="text-xs text-orange-600">
+                        {request.orderIds.length} đơn hàng
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Items List */}
+                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                    {request.items.slice(0, 3).map((item: any, idx: number) => (
+                      <p key={idx} className="text-sm text-muted-foreground truncate">
+                        • {item.quantity}x {item.name}
+                      </p>
+                    ))}
+                    {request.items.length > 3 && (
+                      <p className="text-xs text-orange-600 font-medium">
+                        +{request.items.length - 3} món khác...
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Total and Actions */}
+                  <div className="flex items-center justify-between pt-2 border-t border-orange-100">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <p className="text-xs text-orange-600 mb-1">Tổng cộng:</p>
+                      <p className="text-xl font-bold text-orange-700 truncate">
+                        {formatPrice(request.total * 1.1)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                        onClick={() => handleConfirmPaymentRequest(request)}
+                      >
+                        <CheckCircle className="mr-1 h-4 w-4" />
+                        Xác nhận
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-300 hover:bg-orange-50 whitespace-nowrap"
+                        onClick={() => handleDismissPaymentRequest(request.tableId)}
+                      >
+                        <X className="mr-1 h-4 w-4" />
+                        Bỏ qua
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )}
 
     {/* Main Content with Tabs */}
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -508,10 +687,35 @@ export default function WaiterOrdersPage() {
                         {/* Actions based on status */}
                         <div className="flex gap-2">
                           {(() => {
+                            const orderStatus = order.status as string;
                             const allItemsServed = order.items.every(item => item.status === "served");
                             const hasUnservedItems = order.items.some(item => item.status !== "served");
                             
-                            if (order.status === "paid") {
+                            // Pending orders - need waiter approval
+                            if (orderStatus === "pending") {
+                              return (
+                                <>
+                                  <Button
+                                    className="bg-green-600 hover:bg-green-700"
+                                    size="sm"
+                                    onClick={() => handleAcceptOrder(order.id)}
+                                  >
+                                    <CheckCircle className="mr-1 h-4 w-4" />
+                                    Duyệt
+                                  </Button>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setRejectingOrder(order)}
+                                  >
+                                    <X className="mr-1 h-4 w-4" />
+                                    Từ chối
+                                  </Button>
+                                </>
+                              );
+                            }
+                            
+                            if (orderStatus === "paid") {
                               return (
                                 <Badge className="bg-muted text-muted-foreground">
                                   Completed
@@ -519,7 +723,11 @@ export default function WaiterOrdersPage() {
                               );
                             }
                             
+<<<<<<< HEAD
+                            if (allItemsServed && orderStatus !== "paid") {
+=======
                             if (allItemsServed) {
+>>>>>>> main
                               return (
                                 <>
                                   <Badge className="bg-orange-100 text-orange-700 border-orange-300">

@@ -6,12 +6,13 @@
 const express = require("express");
 const router = express.Router();
 const ordersController = require("../controllers/orders.controller");
+const { optionalCustomer } = require("../middleware/authMiddleware");
 
 // GET /api/orders - Get all orders (Admin)
 router.get("/", ordersController.getAll);
 
-// POST /api/orders - Create new order
-router.post("/", ordersController.create);
+// POST /api/orders - Create new order (with optional customer auth)
+router.post("/", optionalCustomer, ordersController.create);
 
 // GET /api/orders/table/:tableId/order - Get orders by table
 // NOTE: This route must come BEFORE /:id to avoid matching 'table' as an id

@@ -61,7 +61,7 @@ export default function ReviewPage() {
     setError("")
 
     try {
-      await reviewsAPI.submit({ orderId: selectedItem, rating, comment: comment || undefined })
+      await reviewsAPI.submit({ itemId: selectedItem, rating, comment: comment || undefined })
       setIsSubmitted(true)
     } catch (err: any) {
       console.error("Failed to submit review:", err)

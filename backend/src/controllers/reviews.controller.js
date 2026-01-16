@@ -14,9 +14,9 @@ exports.getByItem = async (req, res, next) => {
     const { itemId } = req.params;
     const { rows } = await db.query(
       `
-      SELECT r.*, c.full_name as customer_name
-      FROM item_reviews r
-      LEFT JOIN customers c ON r.customer_id = c.id
+      SELECT r.*, u.full_name as customer_name
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.id
       WHERE r.menu_item_id = $1
       ORDER BY r.created_at DESC
     `,
@@ -45,7 +45,7 @@ exports.getStats = async (req, res, next) => {
         COUNT(*) FILTER (WHERE rating = 3) as three_star,
         COUNT(*) FILTER (WHERE rating = 2) as two_star,
         COUNT(*) FILTER (WHERE rating = 1) as one_star
-      FROM item_reviews
+      FROM reviews
       WHERE menu_item_id = $1
     `,
       [itemId]
@@ -62,33 +62,38 @@ exports.getStats = async (req, res, next) => {
  */
 exports.create = async (req, res, next) => {
   try {
-    const { menu_item_id, rating, comment } = req.body;
-    const customer_id = req.customer.customerId;
+    const { menu_item_id, itemId, rating, comment } = req.body;
+    const menuItemId = menu_item_id || itemId; // Support both formats
+    const customer_id = req.customer?.userId || req.customer?.customerId; // Support both
+
+    if (!customer_id) {
+      return res.status(401).json({ message: "Vui lòng đăng nhập để đánh giá" });
+    }
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ message: "Rating phải từ 1 đến 5" });
     }
 
-    if (!menu_item_id) {
+    if (!menuItemId) {
       return res.status(400).json({ message: "menu_item_id là bắt buộc" });
     }
 
     // Kiểm tra xem customer đã review món này chưa
     const existingReview = await db.query(
-      "SELECT id FROM item_reviews WHERE customer_id = $1 AND menu_item_id = $2",
-      [customer_id, menu_item_id]
+      "SELECT id FROM reviews WHERE user_id = $1 AND menu_item_id = $2",
+      [customer_id, menuItemId]
     );
 
     if (existingReview.rowCount > 0) {
       // Update review cũ
       const { rows } = await db.query(
         `
-        UPDATE item_reviews 
+        UPDATE reviews 
         SET rating = $1, comment = $2, created_at = NOW()
-        WHERE customer_id = $3 AND menu_item_id = $4
+        WHERE user_id = $3 AND menu_item_id = $4
         RETURNING *
       `,
-        [rating, comment, customer_id, menu_item_id]
+        [rating, comment, customer_id, menuItemId]
       );
       return res.json({ message: "Đã cập nhật đánh giá", review: rows[0] });
     }
@@ -96,11 +101,11 @@ exports.create = async (req, res, next) => {
     // Tạo review mới
     const { rows } = await db.query(
       `
-      INSERT INTO item_reviews (customer_id, menu_item_id, rating, comment)
+      INSERT INTO reviews (user_id, menu_item_id, rating, comment)
       VALUES ($1, $2, $3, $4)
       RETURNING *
     `,
-      [customer_id, menu_item_id, rating, comment]
+      [customer_id, menuItemId, rating, comment]
     );
 
     res.status(201).json({ message: "Đã thêm đánh giá", review: rows[0] });
