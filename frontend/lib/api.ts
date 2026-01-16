@@ -138,6 +138,13 @@ export const authAPI = {
 
   // Get current user profile
   getProfile: () => fetchAPI<{ user: any }>("/auth/me"),
+
+  // Change password
+  changePassword: (currentPassword: string, newPassword: string) =>
+    fetchAPI<{ message: string }>("/auth/change-password", {
+      method: "PUT",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
 };
 
 // ==================== CUSTOMER AUTH API ====================

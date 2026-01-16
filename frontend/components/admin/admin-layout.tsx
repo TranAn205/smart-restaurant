@@ -5,6 +5,7 @@ import type React from "react";
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -19,6 +20,7 @@ import {
   Lock,
   ShoppingBag,
   Users,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,16 +45,32 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [adminName, setAdminName] = useState("Admin");
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   useEffect(() => {
     // Check admin auth
     const token = localStorage.getItem("admin_token");
     const name = localStorage.getItem("adminName");
+    const user = localStorage.getItem("admin_user");
+    
     if (!token) {
       router.push("/admin/login");
       return;
     }
+    
     if (name) setAdminName(name);
+    
+    // Get avatar from admin_user object
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        if (userData.avatar) {
+          setAvatarUrl(userData.avatar);
+        }
+      } catch (e) {
+        console.error("Failed to parse admin_user:", e);
+      }
+    }
   }, [router]);
 
   const handleLogout = () => {
@@ -127,10 +145,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         {/* User Section */}
         <div className="border-t border-sidebar-border p-4">
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sidebar-accent">
-              <span className="text-sm font-medium text-sidebar-accent-foreground">
-                {adminName[0].toUpperCase()}
-              </span>
+            <div className="h-10 w-10 rounded-full overflow-hidden bg-sidebar-accent flex-shrink-0">
+              {avatarUrl ? (
+                <Image
+                  src={avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:4000${avatarUrl}`}
+                  alt="Avatar"
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full w-full">
+                  <span className="text-sm font-medium text-sidebar-accent-foreground">
+                    {adminName[0]?.toUpperCase() || "A"}
+                  </span>
+                </div>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="truncate font-medium">{adminName}</p>
@@ -139,6 +169,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </p>
             </div>
           </div>
+          <Link
+            href="/admin/profile"
+            className="flex items-center w-full justify-start px-3 py-2 mb-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <User className="mr-2 h-4 w-4" />
+            Thông tin cá nhân
+          </Link>
           <Link
             href="/admin/change-password"
             className="flex items-center w-full justify-start px-3 py-2 mb-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
