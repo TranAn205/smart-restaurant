@@ -22,6 +22,15 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/menu-data";
 import { adminAPI } from "@/lib/api";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface Order {
   id: number;
@@ -405,7 +414,7 @@ export default function AdminDashboardPage() {
 
         {/* Revenue Chart and Top Items */}
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          {/* Revenue Chart (Simple Bar Representation) */}
+          {/* Revenue Chart (Line Chart) */}
           <Card>
             <CardHeader>
               <CardTitle>Doanh thu 7 ngày qua</CardTitle>
@@ -416,28 +425,45 @@ export default function AdminDashboardPage() {
                   <p>Chưa có dữ liệu doanh thu</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {dailyRevenue.map((day, idx) => {
-                    const maxRevenue = Math.max(...dailyRevenue.map(d => parseFloat(d.revenue) || 0));
-                    const revenue = parseFloat(day.revenue) || 0;
-                    const percentage = maxRevenue > 0 ? (revenue / maxRevenue) * 100 : 0;
-                    const dateStr = new Date(day.date).toLocaleDateString("vi-VN", { weekday: "short", day: "numeric", month: "short" });
-                    
-                    return (
-                      <div key={idx} className="flex items-center gap-3">
-                        <span className="w-20 text-sm text-muted-foreground">{dateStr}</span>
-                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary rounded-full transition-all duration-500"
-                            style={{ width: `${percentage}%` }}
-                          />
-                        </div>
-                        <span className="w-24 text-sm font-medium text-right">
-                          {formatPrice(revenue)}
-                        </span>
-                      </div>
-                    );
-                  })}
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={dailyRevenue.map((day) => ({
+                        date: new Date(day.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" }),
+                        revenue: parseFloat(day.revenue) || 0,
+                      }))}
+                      margin={{ top: 5, right: 10, left: 10, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12 }}
+                        className="text-muted-foreground"
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                        className="text-muted-foreground"
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [formatPrice(value), "Doanh thu"]}
+                        labelStyle={{ color: "var(--foreground)" }}
+                        contentStyle={{
+                          backgroundColor: "var(--card)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "8px",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="revenue"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth={2}
+                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </CardContent>
