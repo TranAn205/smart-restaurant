@@ -53,4 +53,7 @@ router.get("/ordered-items", customerController.getOrderedItems);
 // PUT /api/customer/change-password - Change password
 router.put("/change-password", customerController.changePassword);
 
+// POST /api/customer/link-orders - Link anonymous table orders to user
+router.post("/link-orders", customerController.linkOrders);
+
 module.exports = router;

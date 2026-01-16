@@ -230,6 +230,13 @@ export const customerAPI = {
   // Get list of items customer has ordered (for reviews)
   getOrderedItems: () =>
     fetchAPI<Array<{ id: string; name: string }>>("/customer/ordered-items"),
+
+  // Link anonymous orders from a table to this user (after login)
+  linkOrders: (tableId: string) =>
+    fetchAPI<{ message: string; linkedOrders: number }>("/customer/link-orders", {
+      method: "POST",
+      body: JSON.stringify({ tableId }),
+    }),
 };
 
 // ==================== MENU API ====================
