@@ -8,6 +8,20 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/menu-data"
 import { orderAPI } from "@/lib/api"
+import { toast } from "sonner"
+import io from "socket.io-client"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
+
+// Prevent external script errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
+      e.preventDefault();
+      return false;
+    }
+  });
+}
 
 interface Order {
   id: string
@@ -60,10 +74,48 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
 
   useEffect(() => {
     fetchOrder()
+    
+    // Socket connection for payment status
+    const tableFromStorage = localStorage.getItem("guest_table")
+    let tableId = null
+    if (tableFromStorage) {
+      try {
+        const parsed = JSON.parse(tableFromStorage)
+        tableId = parsed.tableId
+      } catch {}
+    }
+
+    const newSocket = io(API_BASE)
+    
+    newSocket.on("connect", () => {
+      console.log("Guest order detail connected to socket")
+      if (tableId) {
+        newSocket.emit("join:table", tableId)
+      }
+    })
+
+    newSocket.on("order:paid", (data: { orderId: string; message?: string }) => {
+      console.log("Payment confirmed for order:", data)
+      if (data.orderId === orderId) {
+        toast.success("Thanh toán thành công!", {
+          description: "Cảm ơn bạn đã sử dụng dịch vụ. Vui lòng đánh giá món ăn.",
+          duration: 3000,
+        })
+        // Redirect to payment success page
+        setTimeout(() => {
+          router.push(`/guest/payment/${orderId}`)
+        }, 1500)
+      }
+    })
+
     // Poll for updates every 5 seconds
     const interval = setInterval(fetchOrder, 5000)
-    return () => clearInterval(interval)
-  }, [orderId])
+    
+    return () => {
+      clearInterval(interval)
+      newSocket.disconnect()
+    }
+  }, [orderId, router])
 
   const getCurrentStepIndex = () => {
     if (!order) return 0
@@ -75,9 +127,14 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
     try {
       await orderAPI.requestBill(orderId)
       setBillRequested(true)
-      alert("Yêu cầu thanh toán đã được gửi đến nhân viên!")
+      toast.success("Yêu cầu đã gửi!", {
+        description: "Nhân viên sẽ đến xác nhận thanh toán ngay.",
+        duration: 3000,
+      })
     } catch (error: any) {
-      alert(error.message || "Không thể gửi yêu cầu. Vui lòng thử lại.")
+      toast.error("Gửi yêu cầu thất bại", {
+        description: error.message || "Vui lòng thử lại.",
+      })
     } finally {
       setIsRequestingBill(false)
     }
@@ -115,55 +172,17 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
       </header>
 
       <main className="mx-auto max-w-lg p-4">
-        {/* Status Timeline */}
-        <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-4 font-semibold text-card-foreground">Trạng thái đơn hàng</h3>
-          <div className="relative">
-            {statusSteps.map((step, index) => {
-              const StepIcon = step.icon
-              const isCompleted = index <= currentStepIndex
-              const isCurrent = index === currentStepIndex
-
-              return (
-                <div key={step.key} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                        isCompleted
-                          ? isCurrent
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-success text-success-foreground"
-                          : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      <StepIcon className="h-5 w-5" />
-                    </div>
-                    {index < statusSteps.length - 1 && (
-                      <div className={`h-8 w-0.5 ${index < currentStepIndex ? "bg-success" : "bg-muted"}`} />
-                    )}
-                  </div>
-                  <div className="flex-1 pb-8">
-                    <p
-                      className={`font-medium ${
-                        isCompleted ? (isCurrent ? "text-primary" : "text-card-foreground") : "text-muted-foreground"
-                      }`}
-                    >
-                      {step.label}
-                    </p>
-                    {isCurrent && (
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {step.key === "ready" && "Món ăn đã sẵn sàng, nhân viên sẽ mang đến bàn của bạn"}
-                        {step.key === "preparing" && "Đầu bếp đang chuẩn bị món ăn của bạn"}
-                        {step.key === "pending" && "Đơn hàng đang chờ nhà bếp xác nhận"}
-                        {step.key === "accepted" && "Đơn hàng đã được nhận, đang chuẩn bị"}
-                        {step.key === "served" && "Món ăn đã được phục vụ, chúc ngon miệng!"}
-                        {step.key === "paid" && "Cảm ơn bạn đã sử dụng dịch vụ"}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
+        {/* Order Info */}
+        <div className="mb-4 rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Đơn hàng</p>
+              <p className="font-mono text-lg font-bold text-card-foreground">#{order.id.slice(-6)}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Bàn số</p>
+              <p className="text-lg font-bold text-primary">{order.table_number}</p>
+            </div>
           </div>
         </div>
 

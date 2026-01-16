@@ -2,20 +2,34 @@
 
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
-import { CheckCircle, Printer, Star, Home, Gift, Loader2 } from "lucide-react"
+import { CheckCircle, Star, Home, Gift, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/menu-data"
 import { paymentAPI, orderAPI } from "@/lib/api"
+
+// Prevent external script errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (e) => {
+    // Suppress ZaloPay and other third-party script errors
+    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
+      e.preventDefault();
+      console.warn('Suppressed external script error:', e.message);
+      return false;
+    }
+  });
+}
 
 interface Receipt {
   restaurant: string
   address: string
   orderId: string
+  tableNumber?: string
   date: string
   items: Array<{
     name: string
     quantity: number
-    price: number
+    price_per_unit: number
+    total_price: number
   }>
   total: number
 }
@@ -23,6 +37,7 @@ interface Receipt {
 interface Order {
   id: string
   table_id: string
+  user_id?: string | null
   status: string
   total_amount: number
   created_at: string
@@ -51,9 +66,11 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
           // Receipt not available, use order data instead
         }
 
-        // Calculate loyalty points (1 point per 10,000 VND)
-        const points = Math.floor(orderData.total_amount / 10000)
-        setLoyaltyPoints(points)
+        // Calculate loyalty points only for logged-in users (1 point per 10,000 VND)
+        if (orderData.user_id) {
+          const points = Math.floor(orderData.total_amount / 10000)
+          setLoyaltyPoints(points)
+        }
       } catch (error) {
         console.error("Failed to fetch data:", error)
       } finally {
@@ -64,14 +81,10 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
     fetchData()
   }, [orderId])
 
-  const handlePrint = () => {
-    window.print()
-  }
 
-  // Calculate tax and total from receipt or order
-  const subtotal = receipt?.total || order?.total_amount || 0
-  const tax = subtotal * 0.1
-  const total = subtotal + tax
+
+  // Get total from receipt or order (already includes everything)
+  const total = receipt?.total || order?.total_amount || 0
 
   if (isLoading) {
     return (
@@ -110,7 +123,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Bàn:</span>
-              <span className="font-medium text-card-foreground">{order?.table_id}</span>
+              <span className="font-medium text-card-foreground">{receipt?.tableNumber || order?.table_id}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Thời gian:</span>
@@ -130,12 +143,12 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
                 </tr>
               </thead>
               <tbody>
-                {receipt?.items.map((item: { name: string; quantity: number; price: number }, index: number) => (
+                {receipt?.items.map((item: any, index: number) => (
                   <tr key={index}>
                     <td className="py-1 text-card-foreground">{item.name}</td>
                     <td className="py-1 text-center text-card-foreground">{item.quantity}</td>
                     <td className="py-1 text-right text-card-foreground">
-                      {formatPrice(item.price * item.quantity)}
+                      {formatPrice(parseFloat(item.total_price) || 0)}
                     </td>
                   </tr>
                 ))}
@@ -144,23 +157,15 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
           </div>
 
           <div className="p-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tạm tính</span>
-              <span className="text-card-foreground">{formatPrice(subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">VAT (10%)</span>
-              <span className="text-card-foreground">{formatPrice(tax)}</span>
-            </div>
-            <div className="mt-2 flex justify-between border-t border-border pt-2">
-              <span className="font-bold text-card-foreground">Tổng cộng</span>
-              <span className="text-lg font-bold text-primary">{formatPrice(total)}</span>
+            <div className="flex justify-between border-t border-border pt-4">
+              <span className="text-lg font-bold text-card-foreground">Tổng cộng</span>
+              <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
             </div>
           </div>
         </div>
 
-        {/* Loyalty Points Earned */}
-        {loyaltyPoints > 0 && (
+        {/* Loyalty Points Earned - Only for logged-in users */}
+        {loyaltyPoints > 0 && order?.user_id && (
           <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -176,11 +181,6 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
 
         {/* Actions */}
         <div className="space-y-3 print:hidden">
-          <Button variant="outline" className="w-full bg-transparent" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            In hóa đơn
-          </Button>
-
           <Button variant="outline" className="w-full bg-transparent" onClick={() => router.push("/guest/review")}>
             <Star className="mr-2 h-4 w-4" />
             Đánh giá món ăn

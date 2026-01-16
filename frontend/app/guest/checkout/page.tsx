@@ -61,7 +61,6 @@ export default function CheckoutPage() {
       setError("Không tìm thấy thông tin bàn. Vui lòng quét QR lại.");
       return;
     }
-    // Remove validation for guest customers - they can order without filling info
     
     setIsLoading(true);
     setError("");
@@ -79,19 +78,34 @@ export default function CheckoutPage() {
         notes: item.notes || undefined,
       }));
 
-      // Call real API - name/phone are optional for walk-in guests
+      console.log("Sending order request...", { tableId, items: orderItems });
+
+      // Call real API - userId will be extracted from token by backend middleware
       const response = await orderAPI.createOrder({
         tableId: tableId,
         items: orderItems,
-        customerId: customerToken || undefined,
+        // Don't send customerId - backend will get it from Authorization header
       });
+
+      console.log("Order response:", response);
 
       // Clear cart
       dispatch({ type: "CLEAR_CART" });
 
-      // Navigate to order detail
-      router.push(`/guest/orders/${response.data?.order_id || response.data?.id}`);
+      // Get order ID from response
+      const orderId = response.data?.order_id || response.data?.id || response.order_id || response.id;
+      
+      if (!orderId) {
+        console.error("No order ID in response:", response);
+        throw new Error("Không nhận được mã đơn hàng");
+      }
+
+      console.log("Navigating to order:", orderId);
+
+      // Navigate to active orders page instead of specific order
+      router.push("/guest/active-orders");
     } catch (err: any) {
+      console.error("Order error:", err);
       setError(err.message || "Đặt món thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);

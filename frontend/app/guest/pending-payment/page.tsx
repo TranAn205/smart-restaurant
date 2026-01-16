@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { CreditCard, Banknote, Building2, CheckCircle, Loader2 } from "lucide-react"
+import { CreditCard, Banknote, Building2, CheckCircle, Loader2, Receipt } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BottomNavigation } from "@/components/guest/bottom-navigation"
 import { CartDrawer } from "@/components/guest/cart-drawer"
 import { formatPrice } from "@/lib/menu-data"
 import { paymentAPI, orderAPI } from "@/lib/api"
+import io from "socket.io-client"
 
 interface Order {
   id: string
@@ -33,15 +34,19 @@ const paymentMethods = [
   { id: "transfer" as const, label: "Chuyển khoản", icon: Building2, description: "QR Code ngân hàng" },
 ]
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
+
 export default function PendingPaymentPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("cash")
   const [isLoading, setIsLoading] = useState(true)
-  const [isProcessing, setIsProcessing] = useState(false)
+  const [isRequesting, setIsRequesting] = useState(false)
+  const [showBill, setShowBill] = useState(false)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [error, setError] = useState("")
   const [tableId, setTableId] = useState<string | null>(null)
+  const [socket, setSocket] = useState<any>(null)
 
   useEffect(() => {
     // Get table ID from guest_table storage
@@ -79,26 +84,47 @@ export default function PendingPaymentPage() {
     fetchBill()
   }, [tableId])
 
+  // Socket connection for payment confirmation
+  useEffect(() => {
+    if (!tableId) return
+
+    const newSocket = io(API_BASE)
+    setSocket(newSocket)
+
+    newSocket.on("connect", () => {
+      console.log("Connected to socket")
+      newSocket.emit("join:table", tableId)
+    })
+
+    newSocket.on("order:paid", (data: { orderId: string; message: string }) => {
+      console.log("Payment confirmed:", data)
+      // Redirect to review page
+      router.push("/guest/review")
+    })
+
+    return () => {
+      newSocket.disconnect()
+    }
+  }, [tableId, router])
+
   const grandTotal = orders.reduce((sum, order) => sum + order.total_amount, 0)
 
-  const handlePayment = async () => {
+  const handleRequestPayment = async () => {
     if (orders.length === 0) return
 
-    setIsProcessing(true)
+    setIsRequesting(true)
     setError("")
 
     try {
-      // Process payment for each order
-      for (const order of orders) {
-        await paymentAPI.processPayment(order.id, selectedMethod)
-      }
-
-      // Navigate to first order's receipt page
-      router.push(`/guest/payment/${orders[0].id}`)
+      const orderIds = orders.map(o => o.id)
+      await paymentAPI.requestPayment(tableId!, orderIds)
+      
+      // Show bill
+      setShowBill(true)
     } catch (err: any) {
-      setError(err.message || "Thanh toán thất bại. Vui lòng thử lại.")
+      setError(err.message || "Không thể gửi yêu cầu thanh toán. Vui lòng thử lại.")
     } finally {
-      setIsProcessing(false)
+      setIsRequesting(false)
     }
   }
 
@@ -132,9 +158,9 @@ export default function PendingPaymentPage() {
               Xem Đơn Hàng
             </Button>
           </div>
-        ) : (
+        ) : !showBill ? (
           <>
-            {/* Orders Summary */}
+            {/* Orders Summary - Before Request */}
             <div className="mb-4 rounded-lg border border-border bg-card">
               <div className="border-b border-border px-4 py-3">
                 <h3 className="font-semibold text-card-foreground">Đơn hàng cần thanh toán ({orders.length})</h3>
@@ -170,75 +196,103 @@ export default function PendingPaymentPage() {
               </div>
             </div>
 
-            {/* Payment Method Selection */}
-            <div className="mb-4 rounded-lg border border-border bg-card p-4">
-              <h3 className="mb-4 font-semibold text-card-foreground">Phương thức thanh toán</h3>
-              <div className="space-y-2">
-                {paymentMethods.map((method) => {
-                  const Icon = method.icon
-                  const isSelected = selectedMethod === method.id
-
-                  return (
-                    <button
-                      key={method.id}
-                      onClick={() => setSelectedMethod(method.id)}
-                      className={`flex w-full items-center gap-3 rounded-lg border p-4 transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : "border-border bg-background hover:border-primary/50"
-                      }`}
-                    >
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                          isSelected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className={`font-medium ${isSelected ? "text-primary" : "text-card-foreground"}`}>
-                          {method.label}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{method.description}</p>
-                      </div>
-                      {isSelected && (
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <CheckCircle className="h-4 w-4" />
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
+            {/* Total and Request Button */}
+            <div className="rounded-lg border border-border bg-card p-4">
+              <div className="mb-4 flex items-center justify-between">
+                <span className="text-lg font-semibold text-card-foreground">Tổng cộng</span>
+                <span className="text-2xl font-bold text-primary">{formatPrice(grandTotal)}</span>
               </div>
+              <Button 
+                className="w-full" 
+                size="lg" 
+                onClick={handleRequestPayment} 
+                disabled={isRequesting}
+              >
+                {isRequesting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Đang gửi yêu cầu...
+                  </>
+                ) : (
+                  <>
+                    <Receipt className="mr-2 h-4 w-4" />
+                    Yêu cầu thanh toán
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Bill Display - After Request */}
+            <div className="mb-4 rounded-lg border-2 border-primary bg-card">
+              <div className="border-b border-border bg-primary/5 px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-card-foreground">Hóa đơn thanh toán</h3>
+                  <div className="flex items-center gap-2 text-primary">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+                    <span className="text-sm font-medium">Chờ xác nhận</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-4">
+                <div className="mb-4 text-center">
+                  <Receipt className="mx-auto h-12 w-12 text-primary mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    Nhân viên phục vụ sẽ đến xác nhận thanh toán
+                  </p>
+                </div>
+
+                <div className="space-y-3 border-t border-border pt-4">
+                  {orders.map((order) => (
+                    <div key={order.id}>
+                      {order.items.map((item, index) => (
+                        <div key={index} className="flex justify-between text-sm mb-2">
+                          <span className="text-card-foreground">
+                            {item.quantity}x {item.item_name}
+                          </span>
+                          <span className="text-card-foreground">{formatPrice(item.total_price)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 space-y-2 border-t border-border pt-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tạm tính</span>
+                    <span className="text-card-foreground">{formatPrice(grandTotal)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">VAT (10%)</span>
+                    <span className="text-card-foreground">{formatPrice(grandTotal * 0.1)}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border pt-2">
+                    <span className="text-lg font-semibold text-card-foreground">Tổng cộng</span>
+                    <span className="text-2xl font-bold text-primary">{formatPrice(grandTotal * 1.1)}</span>
+                  </div>
+                </div>
+
+                {/* Payment Method Display */}
+                <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3">
+                  <p className="text-sm text-muted-foreground mb-2">Phương thức thanh toán</p>
+                  <div className="flex items-center gap-2">
+                    <Banknote className="h-5 w-5 text-primary" />
+                    <span className="font-medium text-card-foreground">Tiền mặt</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-info/50 bg-info/10 p-4">
+              <p className="text-sm text-info-foreground text-center">
+                💡 Vui lòng chờ nhân viên xác nhận thanh toán. Sau đó bạn có thể đánh giá món ăn!
+              </p>
             </div>
           </>
         )}
       </main>
-
-      {/* Fixed Bottom Summary */}
-      {orders.length > 0 && (
-        <div className="fixed bottom-16 left-0 right-0 border-t border-border bg-card p-4">
-          <div className="mx-auto max-w-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="text-muted-foreground">Tổng thanh toán</span>
-              <span className="text-2xl font-bold text-primary">{formatPrice(grandTotal)}</span>
-            </div>
-            <Button className="w-full" size="lg" onClick={handlePayment} disabled={isProcessing}>
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang xử lý...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Thanh toán {orders.length} đơn
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
 
       <BottomNavigation onCartClick={() => setIsCartOpen(true)} />
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
