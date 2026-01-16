@@ -12,9 +12,11 @@ Xây dựng giải pháp toàn diện bao gồm:
 
 ## 👥 Nhóm phát triển
 
-- Dev A (Leader/Fullstack)
-- Dev B (Backend/Database)
-- Dev C (Frontend/UI)
+| Thành viên | MSSV | GitHub |
+|------------|------|--------|
+| Nguyễn Lê Thế Vinh (Leader) | 23120190 | [Zinthw](https://github.com/Zinthw) |
+| Trần Thanh An | 23120017 | [Gaaus56](https://github.com/Gaaus56) |
+| Nguyễn Thị Ánh Ngọc | 23120061 | [angquoc](https://github.com/angquoc) |
 
 ## 🛠️ Công nghệ dự kiến
 
