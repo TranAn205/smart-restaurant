@@ -1,0 +1,22 @@
+# Exclude node_modules - must be installed fresh in container
+node_modules
+
+# Logs
+npm-debug.log
+*.log
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore

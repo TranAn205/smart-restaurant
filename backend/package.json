@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "migrate": "node migrate.js",
-    "start": "node migrate.js && node src/index.js"
+    "seed": "node seed.js",
+    "start": "node migrate.js && node seed.js && node src/index.js"
   },
   "dependencies": {
     "@faker-js/faker": "^10.2.0",

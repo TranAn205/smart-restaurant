@@ -1,11 +1,31 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { qrAPI } from "@/lib/api"
 
+// Wrapper component with Suspense
 export default function MenuRedirectPage() {
+  return (
+    <Suspense fallback={<MenuRedirectLoading />}>
+      <MenuRedirectContent />
+    </Suspense>
+  );
+}
+
+// Loading component
+function MenuRedirectLoading() {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+      <p className="text-muted-foreground">Đang tải...</p>
+    </div>
+  );
+}
+
+// Main content component
+function MenuRedirectContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [error, setError] = useState("")

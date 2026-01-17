@@ -1,12 +1,39 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle, XCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+// Wrapper component with Suspense
 export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailLoading />}>
+      <VerifyEmailContent />
+    </Suspense>
+  );
+}
+
+// Loading component
+function VerifyEmailLoading() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+      <div className="w-full max-w-md space-y-8 text-center">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Đang xác thực...</h1>
+          <p className="mt-2 text-muted-foreground">Vui lòng chờ trong giây lát</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main content component
+function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get("token")
