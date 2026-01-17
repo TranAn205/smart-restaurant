@@ -2,13 +2,16 @@ require("dotenv").config();
 const { Pool } = require("pg");
 const bcrypt = require("bcrypt");
 
+// SSL Configuration for cloud databases (Render, Railway, etc.)
+// rejectUnauthorized: false allows self-signed certificates
+const sslConfig = process.env.NODE_ENV === "production" 
+  ? { rejectUnauthorized: false }
+  : false;
+
 // Kết nối Database
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl:
-    process.env.NODE_ENV === "production"
-      ? { rejectUnauthorized: false }
-      : false,
+  ssl: sslConfig,
 });
 
 async function migrate() {
