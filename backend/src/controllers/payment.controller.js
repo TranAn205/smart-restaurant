@@ -85,7 +85,12 @@ exports.requestPayment = async (req, res, next) => {
             WHERE oi.order_id = ANY($1::uuid[])
         `, [orderIds]);
 
-        const grandTotal = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+        // Calculate subtotal from items and apply VAT
+        const subtotal = itemsRes.rows.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const discount = orders.reduce((sum, order) => sum + parseFloat(order.discount_amount || 0), 0);
+        const afterDiscount = subtotal - discount;
+        const tax = afterDiscount * 0.10; // VAT 10%
+        const grandTotal = afterDiscount + tax;
 
         // Send notification to waiter via socket
         try {
@@ -96,6 +101,9 @@ exports.requestPayment = async (req, res, next) => {
                 orderIds,
                 orders,
                 items: itemsRes.rows,
+                subtotal,
+                discount,
+                tax,
                 total: grandTotal,
                 requestedAt: new Date()
             });
@@ -107,6 +115,9 @@ exports.requestPayment = async (req, res, next) => {
             message: 'Payment request sent',
             orders,
             items: itemsRes.rows,
+            subtotal,
+            discount,
+            tax,
             total: grandTotal
         });
     } catch (err) {
@@ -213,6 +224,13 @@ exports.getReceipt = async (req, res, next) => {
             WHERE oi.order_id = $1
         `, [id]);
 
+        // Calculate totals with VAT
+        const subtotal = itemsRes.rows.reduce((sum, item) => sum + parseFloat(item.total_price || 0), 0);
+        const discount = parseFloat(order.discount_amount || 0);
+        const afterDiscount = subtotal - discount;
+        const tax = afterDiscount * 0.10; // VAT 10%
+        const total = afterDiscount + tax;
+
         res.json({
             restaurant: "Smart Restaurant",
             address: "123 Food Street",
@@ -220,7 +238,10 @@ exports.getReceipt = async (req, res, next) => {
             tableNumber: order.table_number,
             date: order.paid_at,
             items: itemsRes.rows,
-            total: order.total_amount
+            subtotal,
+            discount,
+            tax,
+            total
         });
     } catch (err) { next(err); }
 };
