@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import { CartProvider } from "@/lib/cart-context"
+import { I18nProvider } from "@/lib/i18n-context"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
@@ -48,7 +49,9 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body className="font-sans antialiased">
-        <CartProvider>{children}</CartProvider>
+        <I18nProvider>
+          <CartProvider>{children}</CartProvider>
+        </I18nProvider>
         <Toaster position="top-center" richColors />
         <Analytics />
       </body>

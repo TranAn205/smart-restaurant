@@ -139,6 +139,11 @@ export default function OrderDetailPage() {
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     
+    // Calculate VAT
+    const subtotal = parseFloat(order.total_amount);
+    const vat = subtotal * 0.1;
+    const grandTotal = subtotal + vat;
+    
     const html = `
       <!DOCTYPE html>
       <html>
@@ -156,7 +161,9 @@ export default function OrderDetailPage() {
           .item-name { flex: 1; }
           .item-qty { width: 40px; text-align: center; }
           .item-price { width: 100px; text-align: right; }
-          .total { font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 2px solid #333; }
+          .summary { margin: 15px 0; }
+          .summary-row { display: flex; justify-content: space-between; margin: 5px 0; }
+          .total { font-size: 20px; font-weight: bold; display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #333; }
           .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
           @media print { body { padding: 0; } }
         </style>
@@ -186,9 +193,13 @@ export default function OrderDetailPage() {
             </div>
           `).join("")}
         </div>
+        <div class="summary">
+          <div class="summary-row"><span>Tạm tính:</span><span>${subtotal.toLocaleString("vi-VN")}đ</span></div>
+          <div class="summary-row"><span>VAT (10%):</span><span>${vat.toLocaleString("vi-VN")}đ</span></div>
+        </div>
         <div class="total">
           <span>TỔNG CỘNG</span>
-          <span>${parseFloat(order.total_amount).toLocaleString("vi-VN")}đ</span>
+          <span>${grandTotal.toLocaleString("vi-VN")}đ</span>
         </div>
         <div class="footer">
           <p>Cảm ơn quý khách!</p>

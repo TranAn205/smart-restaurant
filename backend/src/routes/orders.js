@@ -14,35 +14,35 @@ router.get("/", ordersController.getAll);
 // POST /api/orders - Create new order (with optional customer auth)
 router.post("/", optionalCustomer, ordersController.create);
 
-// GET /api/orders/table/:tableId/order - Get orders by table (allow guests)
+// GET /api/orders/table/:tableId/order - Get orders by table
 // NOTE: This route must come BEFORE /:id to avoid matching 'table' as an id
-router.get("/table/:tableId/order", optionalCustomer, ordersController.getByTable);
+router.get("/table/:tableId/order", ordersController.getByTable);
 
-// GET /api/orders/:id - Get order by ID (optionalCustomer allows guests)
-router.get("/:id", optionalCustomer, ordersController.getById);
+// GET /api/orders/:id - Get order by ID
+router.get("/:id", ordersController.getById);
 
-// PATCH /api/orders/:id/items - Add items to order (allow guests)
-router.patch("/:id/items", optionalCustomer, ordersController.addItems);
+// PATCH /api/orders/:id/items - Add items to order
+router.patch("/:id/items", ordersController.addItems);
 
 // PATCH /api/orders/:id/attach-customer - Attach customer to order
 router.patch("/:id/attach-customer", ordersController.attachCustomer);
 
-// POST /api/orders/:id/request-bill - Request bill from waiter (allow guests)
-router.post("/:id/request-bill", optionalCustomer, ordersController.requestBill);
+// POST /api/orders/:id/request-bill - Request bill from waiter
+router.post("/:id/request-bill", ordersController.requestBill);
 
 // PATCH /api/orders/:id/discount - Apply discount (Admin/Waiter)
 router.patch("/:id/discount", ordersController.applyDiscount);
 
-// GET /api/orders/:id/bill/pdf - Download bill as PDF (allow guests)
-router.get("/:id/bill/pdf", optionalCustomer, ordersController.generateBillPDF);
+// GET /api/orders/:id/bill/pdf - Download bill as PDF
+router.get("/:id/bill/pdf", ordersController.generateBillPDF);
 
 const { requireCustomer } = require("../middleware/authMiddleware");
 const usePointsController = require("../controllers/usepoints.controller");
 
 // PATCH /api/orders/:id/use-points - Khách dùng điểm trừ vào tiền đơn hàng
 router.patch("/:id/use-points", requireCustomer, usePointsController.usePoints);
-// GET /api/orders/:id/bill/thermal - Get thermal printer commands (allow guests)
-router.get("/:id/bill/thermal", optionalCustomer, ordersController.generateThermalBill);
+// GET /api/orders/:id/bill/thermal - Get thermal printer commands
+router.get("/:id/bill/thermal", ordersController.generateThermalBill);
 
 module.exports = router;
 
