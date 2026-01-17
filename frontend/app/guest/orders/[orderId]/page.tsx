@@ -256,13 +256,33 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
           </div>
         </div>
 
-        {/* Total */}
+        {/* Total Breakdown */}
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-card-foreground">Tổng cộng</span>
-            <span className="text-xl font-bold text-primary">
-              {formatPrice(order.total_amount - (order.discount_amount || 0))}
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Tạm tính</span>
+              <span className="text-card-foreground">
+                {formatPrice(order.total_amount - (order.discount_amount || 0))}
+              </span>
+            </div>
+            {order.discount_amount && order.discount_amount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Giảm giá</span>
+                <span className="text-success">-{formatPrice(order.discount_amount)}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">VAT (10%)</span>
+              <span className="text-card-foreground">
+                {formatPrice((order.total_amount - (order.discount_amount || 0)) * 0.1)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between border-t border-border pt-2">
+              <span className="font-medium text-card-foreground">Tổng cộng</span>
+              <span className="text-xl font-bold text-primary">
+                {formatPrice((order.total_amount - (order.discount_amount || 0)) * 1.1)}
+              </span>
+            </div>
           </div>
         </div>
 
