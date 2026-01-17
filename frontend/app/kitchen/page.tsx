@@ -36,6 +36,8 @@ interface OrderItem {
   modifiers: any;
   notes?: string;
   status: string;
+  prep_time_minutes?: number;
+  item_created_at?: string;
 }
 
 interface KitchenOrder {
@@ -188,13 +190,14 @@ export default function KitchenDisplayPage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const getTimeColor = (createdAt: string) => {
+  const getTimeColor = (createdAt: string, prepTimeMinutes: number = 15) => {
     const created = new Date(createdAt);
     const diff = Math.floor(
       (currentTime.getTime() - created.getTime()) / 1000 / 60
     );
-    if (diff >= 15) return "text-destructive";
-    if (diff >= 10) return "text-warning";
+    // Highlight red if exceeded prep time, yellow if >= 70% of prep time
+    if (diff >= prepTimeMinutes) return "text-destructive font-bold";
+    if (diff >= prepTimeMinutes * 0.7) return "text-warning";
     return "text-muted-foreground";
   };
 
@@ -407,11 +410,13 @@ export default function KitchenDisplayPage() {
                         </div>
                         <div
                           className={`flex items-center gap-1 text-sm font-mono ${getTimeColor(
-                            item.created_at
+                            item.item_created_at || item.created_at,
+                            item.prep_time_minutes || 15
                           )}`}
                         >
                           <Clock className="h-3 w-3" />
-                          {getElapsedTime(item.created_at)}
+                          {getElapsedTime(item.item_created_at || item.created_at)}
+                          <span className="text-xs opacity-70">/ {item.prep_time_minutes || 15}m</span>
                         </div>
                       </div>
 
