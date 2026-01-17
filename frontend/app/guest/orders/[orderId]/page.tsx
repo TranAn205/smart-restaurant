@@ -67,12 +67,17 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
 
   useEffect(() => {
     fetchOrder()
-    // Lấy danh sách review của user
-    reviewsAPI.getMyReviews().then((data) => {
-      setMyReviews(data || [])
-    }).catch(() => setMyReviews([]))
+    
+    // Chỉ lấy danh sách review khi user đã đăng nhập
+    const customerToken = typeof window !== "undefined" ? localStorage.getItem("customerToken") : null
+    if (customerToken) {
+      reviewsAPI.getMyReviews().then((data) => {
+        setMyReviews(data || [])
+      }).catch(() => setMyReviews([]))
+    }
+    
     // Socket connection for payment status
-    const tableFromStorage = localStorage.getItem("guest_table")
+    const tableFromStorage = typeof window !== "undefined" ? localStorage.getItem("guest_table") : null
     let tableId = null
     if (tableFromStorage) {
       try {
@@ -104,6 +109,7 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
     }
   }, [orderId, router])
 
+
   const getCurrentStepIndex = () => {
     if (!order) return 0
     return statusSteps.findIndex((step) => step.key === order.status)
@@ -127,6 +133,25 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
     }
   }
 
+
+  // Show loading state first
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 flex items-center gap-4 border-b border-border bg-card px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-bold text-card-foreground">Chi tiết đơn hàng</h1>
+        </header>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-4 text-muted-foreground">Đang tải đơn hàng...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!order) {
     return (
       <div className="min-h-screen bg-background">
@@ -142,6 +167,7 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
             Quay lại
           </Button>
         </div>
+
       </div>
     )
   }

@@ -27,6 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { kitchenAPI } from "@/lib/api";
 import { formatPrice } from "@/lib/menu-data";
 import { useToast } from "@/hooks/use-toast";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
 
 interface OrderItem {
   id: string;
@@ -355,6 +356,7 @@ export default function KitchenDisplayPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
           <Button variant="ghost" size="icon" onClick={handleLogout}>
             <LogOut className="h-4 w-4" />
           </Button>

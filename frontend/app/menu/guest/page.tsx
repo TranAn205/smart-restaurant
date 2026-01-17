@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { BottomNavigation } from "@/components/guest/bottom-navigation";
 import { CartDrawer } from "@/components/guest/cart-drawer";
 import { CategoryTabs } from "@/components/guest/category-tabs";
@@ -15,11 +14,12 @@ import {
   type Category,
 } from "@/lib/menu-data";
 import { menuAPI, getImageUrl } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 export default function GuestMenuPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
-  const [sortBy, setSortBy] = useState<"created_at" | "popularity">("created_at");
+  const [sortBy, setSortBy] = useState<"created_at" | "popularity">("popularity"); // Default to popularity for "All"
   const [chefRecommended, setChefRecommended] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
@@ -29,159 +29,164 @@ export default function GuestMenuPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [tableNumber, setTableNumber] = useState<string>("");
-  const [totalPages, setTotalPages] = useState(1);
+  
+  // Infinite scroll states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const itemsPerPage = 12;
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const { dispatch } = useCart();
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const currentPage = parseInt(searchParams.get('page') || '1');
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      // Get table info from localStorage (saved when scanning QR)
-      const tableFromStorage = localStorage.getItem("guest_table");
-
-      if (tableFromStorage) {
-        try {
-          const parsed = JSON.parse(tableFromStorage);
-          // Ưu tiên tableNumber (số bàn thực tế), fallback sang tableId
-          setTableNumber(parsed.tableNumber || parsed.tableId || "");
-        } catch {
-          setTableNumber("");
+  // Fetch categories once on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const tableFromStorage = localStorage.getItem("guest_table");
+        if (tableFromStorage) {
+          try {
+            const parsed = JSON.parse(tableFromStorage);
+            setTableNumber(parsed.tableNumber || parsed.tableId || "");
+          } catch {
+            setTableNumber("");
+          }
         }
-      }
 
-      // Fetch categories
-      const categoriesRes = await menuAPI.getCategories();
-      if (categoriesRes.data && categoriesRes.data.length > 0) {
-        const apiCategories: Category[] = [
-          { id: "all", name: "Tất cả", icon: "🍽️" },
-          ...categoriesRes.data.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            icon: cat.icon || "🍴",
-          })),
-        ];
-        setCategories(apiCategories);
+        const categoriesRes = await menuAPI.getCategories();
+        if (categoriesRes.data && categoriesRes.data.length > 0) {
+          const apiCategories: Category[] = [
+            { id: "all", name: "Tất cả", icon: "🍽️" },
+            ...categoriesRes.data.map((cat: any) => ({
+              id: cat.id,
+              name: cat.name,
+              icon: cat.icon || "🍴",
+            })),
+          ];
+          setCategories(apiCategories);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch categories:", err);
       }
+    };
 
-      // Fetch menu items with pagination params
+    fetchCategories();
+  }, []);
+
+  // Fetch menu items
+  const fetchItems = useCallback(async (page: number, append: boolean = false) => {
+    if (page === 1) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
+    setError("");
+
+    try {
       const params = new URLSearchParams();
-      params.set('page', currentPage.toString());
+      params.set('page', page.toString());
       params.set('limit', itemsPerPage.toString());
+      
       if (activeCategory && activeCategory !== 'all') {
         params.set('categoryId', activeCategory);
       }
       if (searchQuery) {
         params.set('q', searchQuery);
       }
-      // Sort by popularity or creation date
-      if (sortBy === 'popularity') {
+      // When "All" category is selected, always sort by popularity
+      if (activeCategory === 'all' || sortBy === 'popularity') {
         params.set('sort', 'popularity');
       }
-      // Filter by chef recommendation
       if (chefRecommended) {
         params.set('chefRecommended', 'true');
       }
 
       const itemsRes = await menuAPI.getItems(params.toString());
-      if (itemsRes.data && itemsRes.data.length > 0) {
-        const apiItems: MenuItem[] = itemsRes.data.map((item: any) => {
-          const mappedItem = {
-            id: item.id,
-            name: item.name,
-            description: item.description || "",
-            price: item.price,
-            image: getImageUrl(item.primary_photo),
-            category: item.category_id || item.category,
-            rating: item.rating || 4.5,
-            reviews: item.reviews || 0,
-            isAvailable:
-              item.is_available !== false && item.status !== "sold_out",
-            modifiers: (item.modifiers || []).map((mod: any) => ({
-              ...mod,
-              multiple: mod.selection_type === 'multiple',
-              required: mod.is_required || false,
-              options: (mod.options || []).map((opt: any) => ({
-                ...opt,
-                price: opt.price_adjustment || opt.price || 0
-              }))
-            })),
-          };
-          // Debug log for first item with modifiers
-          if (mappedItem.modifiers && mappedItem.modifiers.length > 0 && itemsRes.data.indexOf(item) === 0) {
-            console.log('First item with modifiers:', mappedItem.name);
-            console.log('Modifiers:', JSON.stringify(mappedItem.modifiers, null, 2));
-          }
-          return mappedItem;
-        });
-        setMenuItems(apiItems);
-        
-        // Update total pages from pagination data
-        if (itemsRes.pagination || itemsRes.total) {
-          // Calculate from backend if provided, or use items length
-          const total = (itemsRes as any).total || apiItems.length;
-          setTotalPages(Math.ceil(total / itemsPerPage));
+      
+      if (itemsRes.data) {
+        const apiItems: MenuItem[] = itemsRes.data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description || "",
+          price: item.price,
+          image: getImageUrl(item.primary_photo),
+          category: item.category_id || item.category,
+          rating: item.rating || 4.5,
+          reviews: item.reviews || 0,
+          isAvailable: item.is_available !== false && item.status !== "sold_out",
+          modifiers: (item.modifiers || []).map((mod: any) => ({
+            ...mod,
+            multiple: mod.selection_type === 'multiple',
+            required: mod.is_required || false,
+            options: (mod.options || []).map((opt: any) => ({
+              ...opt,
+              price: opt.price_adjustment || opt.price || 0
+            }))
+          })),
+        }));
+
+        if (append) {
+          setMenuItems(prev => [...prev, ...apiItems]);
+        } else {
+          setMenuItems(apiItems);
         }
+
+        // Check if there's more data
+        setHasMore(apiItems.length === itemsPerPage);
+      } else {
+        if (!append) {
+          setMenuItems([]);
+        }
+        setHasMore(false);
       }
     } catch (err: any) {
       console.error("API Error:", err);
-      setError(
-        err.message || "Không thể tải menu. Vui lòng kiểm tra kết nối mạng."
-      );
+      setError(err.message || "Không thể tải menu. Vui lòng kiểm tra kết nối mạng.");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [activeCategory, searchQuery, sortBy, chefRecommended]);
 
+  // Initial fetch and when filters change
   useEffect(() => {
-    fetchData();
-  }, [currentPage, activeCategory, searchQuery, sortBy, chefRecommended]);
+    setCurrentPage(1);
+    setMenuItems([]);
+    setHasMore(true);
+    fetchItems(1, false);
+  }, [activeCategory, searchQuery, sortBy, chefRecommended]);
 
-  // Reset page when search or category changes
+  // Load more when page changes (except first page)
   useEffect(() => {
-    if (currentPage !== 1) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set('page', '1');
-      router.push(`?${params.toString()}`);
+    if (currentPage > 1) {
+      fetchItems(currentPage, true);
     }
-  }, [searchQuery, activeCategory, sortBy, chefRecommended]);
+  }, [currentPage]);
 
-  // Simple fuzzy search function
-  const fuzzyMatch = (text: string, query: string): boolean => {
-    if (!query) return true;
-    const textLower = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-    const queryLower = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-    
-    // Exact match
-    if (textLower.includes(queryLower)) return true;
-    
-    // Fuzzy match: allow 1-2 character differences
-    const words = queryLower.split(/\s+/);
-    return words.every(word => {
-      if (word.length <= 2) return textLower.includes(word);
-      
-      // Check if word appears with minor typos
-      for (let i = 0; i <= textLower.length - word.length; i++) {
-        const substr = textLower.substr(i, word.length);
-        let diff = 0;
-        for (let j = 0; j < word.length; j++) {
-          if (word[j] !== substr[j]) diff++;
-          if (diff > 1) break;
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+          setCurrentPage(prev => prev + 1);
         }
-        if (diff <= 1) return true;
-      }
-      return false;
-    });
-  };
+      },
+      { threshold: 0.1 }
+    );
 
-  // No need for client-side filtering - backend handles it
-  const paginatedItems = menuItems;
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasMore, loading, loadingMore]);
 
   const handleQuickAdd = (item: MenuItem) => {
     if (item.modifiers && item.modifiers.length > 0) {
@@ -197,7 +202,7 @@ export default function GuestMenuPage() {
           totalPrice: item.price,
         },
       });
-      // Show success notification with theme colors
+      // Show success notification
       const notification = document.createElement('div');
       notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-primary text-primary-foreground px-8 py-3.5 rounded-lg shadow-lg z-50 font-medium min-w-[280px] text-center';
       notification.textContent = `✓ Đã thêm ${item.name} vào giỏ hàng`;
@@ -214,13 +219,10 @@ export default function GuestMenuPage() {
   ) => {
     const modifierTotal = modifiers.reduce((acc, mod) => {
       const price = typeof mod.price === 'number' ? mod.price : parseFloat(mod.price || 0);
-      console.log('Modifier:', mod.name, 'Price:', mod.price, 'Parsed:', price);
       return acc + (isNaN(price) ? 0 : price);
     }, 0);
-    // Parse item.price to number to prevent string concatenation
     const itemPrice = typeof item.price === 'number' ? item.price : parseFloat(item.price || 0);
     const finalTotal = itemPrice + modifierTotal;
-    console.log('Item:', item.name, 'Base price:', item.price, 'Parsed base:', itemPrice, 'Modifier total:', modifierTotal, 'Final total:', finalTotal);
     dispatch({
       type: "ADD_ITEM",
       payload: {
@@ -263,7 +265,7 @@ export default function GuestMenuPage() {
             <p className="text-destructive font-medium mb-2">Lỗi tải dữ liệu</p>
             <p className="text-sm text-muted-foreground mb-4">{error}</p>
             <button
-              onClick={fetchData}
+              onClick={() => fetchItems(1, false)}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
             >
               Thử lại
@@ -278,7 +280,7 @@ export default function GuestMenuPage() {
         ) : (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {paginatedItems.map((item) => (
+              {menuItems.map((item) => (
                 <MenuItemCard
                   key={item.id}
                   item={item}
@@ -291,36 +293,20 @@ export default function GuestMenuPage() {
               ))}
             </div>
             
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="mt-6 flex items-center justify-center gap-2">
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.set('page', Math.max(1, currentPage - 1).toString());
-                    router.push(`?${params.toString()}`);
-                  }}
-                  disabled={currentPage === 1}
-                  className="px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                >
-                  ← Trước
-                </button>
-                <span className="px-4 py-1 text-sm text-muted-foreground">
-                  Trang {currentPage} / {totalPages}
-                </span>
-                <button
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.set('page', Math.min(totalPages, currentPage + 1).toString());
-                    router.push(`?${params.toString()}`);
-                  }}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-1 rounded border border-border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted"
-                >
-                  Sau →
-                </button>
-              </div>
-            )}
+            {/* Infinite scroll trigger */}
+            <div ref={loadMoreRef} className="mt-6 flex justify-center py-4">
+              {loadingMore && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Đang tải thêm...</span>
+                </div>
+              )}
+              {!hasMore && menuItems.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Đã hiển thị tất cả {menuItems.length} món
+                </p>
+              )}
+            </div>
           </>
         )}
       </main>

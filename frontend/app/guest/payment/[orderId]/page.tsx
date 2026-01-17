@@ -45,8 +45,9 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
     const fetchData = async () => {
       try {
         // Get order details
-        const orderData = await orderAPI.getOrder(orderId)
-        setOrder(orderData as Order)
+        const orderResponse = await orderAPI.getOrder(orderId)
+        const orderData = orderResponse.data as Order
+        setOrder(orderData)
 
         // Try to get receipt (may fail if order wasn't paid yet)
         try {
@@ -57,7 +58,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
         }
 
         // Calculate loyalty points only for logged-in users (1 point per 10,000 VND)
-        if (orderData.user_id) {
+        if (orderData?.user_id) {
           const points = Math.floor(orderData.total_amount / 10000)
           setLoyaltyPoints(points)
         }
@@ -73,8 +74,10 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
 
 
 
-  // Get total from receipt or order (already includes everything)
-  const total = receipt?.total || (order ? order.total_amount - (order.discount_amount || 0) : 0)
+  // Calculate subtotal, VAT, and total
+  const subtotal = receipt?.total || (order ? order.total_amount - (order.discount_amount || 0) : 0)
+  const vat = subtotal * 0.1
+  const total = subtotal + vat
 
   if (isLoading) {
     return (
@@ -147,9 +150,19 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
           </div>
 
           <div className="p-4">
-            <div className="flex justify-between border-t border-border pt-4">
-              <span className="text-lg font-bold text-card-foreground">Tổng cộng</span>
-              <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tạm tính</span>
+                <span className="text-card-foreground">{formatPrice(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">VAT (10%)</span>
+                <span className="text-card-foreground">{formatPrice(vat)}</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-2">
+                <span className="text-lg font-bold text-card-foreground">Tổng cộng</span>
+                <span className="text-xl font-bold text-primary">{formatPrice(total)}</span>
+              </div>
             </div>
           </div>
         </div>

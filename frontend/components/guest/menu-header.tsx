@@ -5,6 +5,8 @@ import { Search, User, SlidersHorizontal, ChefHat } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LanguageSwitcher } from "@/components/ui/language-switcher";
+import { useI18n } from "@/lib/i18n-context";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +35,7 @@ export function MenuHeader({
 }: MenuHeaderProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [customerName, setCustomerName] = useState("");
+  const { t } = useI18n();
 
   useEffect(() => {
     const token = localStorage.getItem("customerToken");
@@ -49,27 +52,30 @@ export function MenuHeader({
             Smart Restaurant
           </h1>
           {tableId && (
-            <p className="text-xs text-muted-foreground">Bàn {tableId}</p>
+            <p className="text-xs text-muted-foreground">{t("common.table")} {tableId}</p>
           )}
         </div>
-        <Link href={isLoggedIn ? "/guest/profile" : "/guest/login"}>
-          <Button variant="ghost" size="icon" className="rounded-full relative">
-            <User className="h-5 w-5" />
-            {isLoggedIn && (
-              <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-card" />
-            )}
-            <span className="sr-only">
-              {isLoggedIn ? "Hồ sơ" : "Đăng nhập"}
-            </span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <LanguageSwitcher />
+          <Link href={isLoggedIn ? "/guest/profile" : "/guest/login"}>
+            <Button variant="ghost" size="icon" className="rounded-full relative">
+              <User className="h-5 w-5" />
+              {isLoggedIn && (
+                <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-card" />
+              )}
+              <span className="sr-only">
+                {isLoggedIn ? t("profile.title") : t("common.login")}
+              </span>
+            </Button>
+          </Link>
+        </div>
       </div>
       <div className="px-4 pb-3 space-y-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Tìm món ăn..."
+            placeholder={t("menu.search")}
             className="pl-9"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
@@ -83,15 +89,15 @@ export function MenuHeader({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="flex-1">
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
-                {sortBy === "popularity" ? "Phổ biến" : "Mới nhất"}
+                {sortBy === "popularity" ? t("menu.popular") : t("menu.newest")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onClick={() => onSortChange?.("created_at")}>
-                Mới nhất
+                {t("menu.newest")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onSortChange?.("popularity")}>
-                Phổ biến nhất
+                {t("menu.popular")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -104,10 +110,11 @@ export function MenuHeader({
             onClick={() => onChefRecommendedChange?.(!chefRecommended)}
           >
             <ChefHat className="h-4 w-4 mr-2" />
-            Đầu bếp đề xuất
+            {t("menu.chefRecommended")}
           </Button>
         </div>
       </div>
     </header>
   );
 }
+
