@@ -81,7 +81,7 @@ const adminProfileRoutes = require("./routes/admin-profile");
 
 app.use("/api/auth", authLimiter, authRouter);
 app.use("/api/customer", customerRouter);
-app.use("/api/orders", orderLimiter, ordersRouter);
+// NOTE: /api/orders is registered later (line 106) with optionalCustomer middleware
 app.use("/api/payment", paymentRouter);
 
 // Role Routes
