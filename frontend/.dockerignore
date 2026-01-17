@@ -1,0 +1,28 @@
+# Exclude node_modules - must be installed fresh in container
+node_modules
+
+# Next.js build output
+.next
+
+# Logs
+npm-debug.log
+*.log
+
+# Environment files (tạo từ build args, không cần copy)
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# TypeScript build info
+tsconfig.tsbuildinfo

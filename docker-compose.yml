@@ -1,0 +1,85 @@
+# ============================================
+# SMART RESTAURANT - Docker Compose
+# ============================================
+# Chạy: docker-compose up -d
+# Dừng: docker-compose down
+# Logs: docker-compose logs -f
+
+services:
+  # ============ DATABASE ============
+  postgres:
+    image: postgres:15-alpine
+    container_name: smart-restaurant-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: smart_restaurant
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d smart_restaurant"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============ BACKEND API ============
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart-restaurant-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database - sslmode=disable for local PostgreSQL container
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD:-postgres123}@postgres:5432/smart_restaurant?sslmode=disable
+      
+      # Server
+      PORT: 4000
+      NODE_ENV: production
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      QR_JWT_SECRET: ${QR_JWT_SECRET:-your-qr-secret-key}
+      
+      # Client URL - QUAN TRỌNG cho QR code
+      # Thay bằng domain thật khi deploy
+      CLIENT_BASE_URL: ${CLIENT_BASE_URL:-http://localhost:3000}
+      
+      # Email (optional)
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      
+      # Google OAuth (optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    volumes:
+      - backend_uploads:/app/public/uploads
+    ports:
+      - "4000:4000"
+
+  # ============ FRONTEND ============
+  # Build args lấy từ file .env ở root
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4000/api}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+    container_name: smart-restaurant-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
+  backend_uploads:

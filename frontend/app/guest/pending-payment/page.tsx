@@ -213,9 +213,19 @@ export default function PendingPaymentPage() {
 
             {/* Total and Request Button */}
             <div className="rounded-lg border border-border bg-card p-4">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-lg font-semibold text-card-foreground">Tổng cộng</span>
-                <span className="text-2xl font-bold text-primary">{formatPrice(grandTotal)}</span>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Tạm tính</span>
+                  <span className="text-card-foreground">{formatPrice(grandTotal)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">VAT (10%)</span>
+                  <span className="text-card-foreground">{formatPrice(grandTotal * 0.1)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-border pt-2">
+                  <span className="text-lg font-semibold text-card-foreground">Tổng cộng</span>
+                  <span className="text-2xl font-bold text-primary">{formatPrice(grandTotal * 1.1)}</span>
+                </div>
               </div>
               <Button 
                 className="w-full" 
