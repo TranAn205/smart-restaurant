@@ -71,8 +71,9 @@ export default function PendingPaymentPage() {
     const fetchBill = async () => {
       try {
         // Get orders for table and filter to served orders
-        const tableOrders = await orderAPI.getTableOrders(tableId)
-        const servedOrders = tableOrders.filter(order => order.status === "served")
+        const response = await orderAPI.getTableOrders(tableId)
+        const tableOrders = response.data || response  // Handle both { data: [] } and [] formats
+        const servedOrders = (tableOrders as any[]).filter((order: any) => order.status === "served")
         setOrders(servedOrders as Order[])
       } catch (err: any) {
         console.error("Failed to fetch orders:", err)
