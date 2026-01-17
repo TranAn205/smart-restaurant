@@ -154,14 +154,14 @@ const seed = async () => {
         }
 
         // Guest (Khách hàng thành viên - 20 người)
-        // const guestIds = [];
-        // for (let i = 1; i <= 20; i++) {
-        //     const res = await client.query(
-        //         `INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4) RETURNING id`,
-        //         [`guest${i}@gmail.com`, hash, 'guest', 'active']
-        //     );
-        //     guestIds.push(res.rows[0].id);
-        // }
+        const guestIds = [];
+        for (let i = 1; i <= 20; i++) {
+            const res = await client.query(
+                `INSERT INTO users (email, password_hash, role, status) VALUES ($1, $2, $3, $4) RETURNING id`,
+                [`guest${i}@gmail.com`, hash, 'guest', 'active']
+            );
+            guestIds.push(res.rows[0].id);
+        }
 
         // 3. TẠO TABLES (BÀN ĂN - 25 bàn)
         console.log('🪑 Đang tạo Bàn ăn...');
