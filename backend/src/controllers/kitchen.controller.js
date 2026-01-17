@@ -22,7 +22,9 @@ exports.getOrders = async (req, res, next) => {
                  'quantity', oi.quantity, 
                  'modifiers', oi.modifiers_selected,
                  'notes', oi.notes,
-                 'status', oi.status
+                 'status', oi.status,
+                 'prep_time_minutes', COALESCE(m.prep_time_minutes, 15),
+                 'item_created_at', oi.created_at
                )
              ) FILTER (WHERE oi.status IN ('accepted', 'preparing', 'ready')) as items
       FROM orders o
