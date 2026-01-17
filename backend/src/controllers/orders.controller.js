@@ -559,16 +559,23 @@ exports.applyDiscount = async (req, res, next) => {
 
 /**
  * GET /api/orders/:id/bill/pdf
- * Generate bill PDF
+ * Generate bill PDF with VAT and professional formatting
  */
 exports.generateBillPDF = async (req, res, next) => {
   try {
     const { id } = req.params;
     const PDFDocument = require("pdfkit");
+    const path = require("path");
 
     const orderRes = await db.query(
       `SELECT o.*, t.table_number,
-              json_agg(json_build_object('name', mi.name, 'quantity', oi.quantity, 'total', oi.total_price)) as items
+              json_agg(json_build_object(
+                'name', mi.name, 
+                'quantity', oi.quantity, 
+                'price', oi.price_per_unit,
+                'total', oi.total_price,
+                'modifiers', oi.modifiers_selected
+              )) as items
        FROM orders o
        JOIN tables t ON o.table_id = t.id
        JOIN order_items oi ON o.id = oi.order_id
@@ -582,33 +589,201 @@ exports.generateBillPDF = async (req, res, next) => {
     }
 
     const order = orderRes.rows[0];
-    const doc = new PDFDocument();
+    const doc = new PDFDocument({ size: 'A5', margin: 30 });
+
+    // Register Roboto fonts for Vietnamese support
+    const fontPath = path.join(__dirname, '../../public/fonts');
+    doc.registerFont('Roboto', path.join(fontPath, 'Roboto-Regular.ttf'));
+    doc.registerFont('Roboto-Bold', path.join(fontPath, 'Roboto-Bold.ttf'));
 
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=bill-${id}.pdf`);
+    res.setHeader("Content-Disposition", `attachment; filename=bill-table-${order.table_number}-${Date.now()}.pdf`);
     doc.pipe(res);
 
-    doc.fontSize(20).text("SMART RESTAURANT", { align: "center" });
-    doc.moveDown();
-    doc.fontSize(12).text(`HÓA ĐƠN #${id}`, { align: "center" });
-    doc.fontSize(10).moveDown().text(`Bàn: ${order.table_number}`);
+    // Header - Restaurant Info
+    doc.font('Roboto-Bold').fontSize(24).text("SMART RESTAURANT", { align: "center" });
+    doc.font('Roboto').fontSize(10).text("123 Nguyễn Huệ, Quận 1, TP.HCM", { align: "center" });
+    doc.text("Tel: 028 1234 5678 | MST: 0123456789", { align: "center" });
+    doc.moveDown(1.5);
+    
+    // Bill Title
+    doc.font('Roboto-Bold').fontSize(16).text("HÓA ĐƠN THANH TOÁN", { align: "center" });
+    doc.moveDown(0.5);
+    
+    // Bill Info
+    doc.font('Roboto').fontSize(11);
+    doc.text(`Số hóa đơn: #${id.slice(-8).toUpperCase()}`, { align: 'left' });
+    doc.text(`Bàn số: ${order.table_number}`);
     doc.text(`Ngày: ${new Date(order.created_at).toLocaleString("vi-VN")}`);
-    doc.moveDown();
+    if (order.customer_name && order.customer_name !== 'Guest') {
+      doc.text(`Khách hàng: ${order.customer_name}`);
+    }
+    doc.moveDown(1);
 
-    order.items.forEach((item, i) => {
-      doc.text(`${i + 1}. ${item.name} x${item.quantity} - ${parseFloat(item.total).toLocaleString()}đ`);
+    // Table Header
+    doc.font('Roboto-Bold').fontSize(10);
+    const tableTop = doc.y;
+    doc.text("Món ăn", 50, tableTop, { width: 200, continued: false });
+    doc.text("SL", 250, tableTop, { width: 40, align: 'center', continued: false });
+    doc.text("Đơn giá", 290, tableTop, { width: 80, align: 'right', continued: false });
+    doc.text("Thành tiền", 370, tableTop, { width: 100, align: 'right' });
+    doc.moveDown(0.3);
+    doc.moveTo(50, doc.y).lineTo(520, doc.y).stroke();
+    doc.moveDown(0.5);
+
+    // Items
+    doc.font('Roboto');
+    order.items.forEach((item) => {
+      const y = doc.y;
+      const itemName = item.name.length > 25 ? item.name.substring(0, 23) + '...' : item.name;
+      doc.text(itemName, 50, y, { width: 200 });
+      doc.text(item.quantity.toString(), 250, y, { width: 40, align: 'center' });
+      doc.text(`${parseFloat(item.price).toLocaleString()}đ`, 290, y, { width: 80, align: 'right' });
+      doc.text(`${parseFloat(item.total).toLocaleString()}đ`, 370, y, { width: 100, align: 'right' });
+      doc.moveDown(0.8);
     });
 
-    doc.moveDown().text("─".repeat(40));
+    // Totals Section
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(520, doc.y).stroke();
+    doc.moveDown(0.5);
+
     const subtotal = parseFloat(order.total_amount);
     const discount = parseFloat(order.discount_amount || 0);
-    doc.text(`Tạm tính: ${subtotal.toLocaleString()}đ`, { align: "right" });
-    if (discount > 0) doc.text(`Giảm giá: -${discount.toLocaleString()}đ`, { align: "right" });
-    doc.fontSize(14).text(`TỔNG: ${(subtotal - discount).toLocaleString()}đ`, { align: "right" });
-    doc.moveDown(2).fontSize(10).text("Cảm ơn quý khách!", { align: "center" });
+    const afterDiscount = subtotal - discount;
+    const tax = afterDiscount * 0.10; // VAT 10%
+    const total = afterDiscount + tax;
+
+    doc.font('Roboto').fontSize(11);
+    doc.text(`Tạm tính:`, 300, doc.y, { width: 120, continued: true });
+    doc.text(`${subtotal.toLocaleString()}đ`, { width: 100, align: 'right' });
+    
+    if (discount > 0) {
+      doc.text(`Giảm giá:`, 300, doc.y, { width: 120, continued: true });
+      doc.text(`-${discount.toLocaleString()}đ`, { width: 100, align: 'right' });
+    }
+    
+    doc.text(`VAT (10%):`, 300, doc.y, { width: 120, continued: true });
+    doc.text(`${tax.toLocaleString()}đ`, { width: 100, align: 'right' });
+    
+    doc.moveDown(0.3);
+    doc.moveTo(300, doc.y).lineTo(520, doc.y).stroke();
+    doc.moveDown(0.3);
+    
+    doc.font('Roboto-Bold').fontSize(14);
+    doc.text(`TỔNG CỘNG:`, 300, doc.y, { width: 120, continued: true });
+    doc.text(`${total.toLocaleString()}đ`, { width: 100, align: 'right' });
+
+    // Footer
+    doc.moveDown(2);
+    doc.font('Roboto').fontSize(10).fillColor('#666');
+    doc.text("Cảm ơn quý khách!", { align: "center" });
+    doc.text("Hẹn gặp lại!", { align: "center" });
 
     doc.end();
   } catch (err) {
     next(err);
   }
 };
+
+/**
+ * GET /api/orders/:id/bill/thermal
+ * Generate ESC/POS commands for thermal printer (80mm)
+ */
+exports.generateThermalBill = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const orderRes = await db.query(
+      `SELECT o.*, t.table_number,
+              json_agg(json_build_object(
+                'name', mi.name, 
+                'quantity', oi.quantity, 
+                'price', oi.price_per_unit,
+                'total', oi.total_price
+              )) as items
+       FROM orders o
+       JOIN tables t ON o.table_id = t.id
+       JOIN order_items oi ON o.id = oi.order_id
+       JOIN menu_items mi ON oi.menu_item_id = mi.id
+       WHERE o.id = $1 GROUP BY o.id, t.table_number`,
+      [id]
+    );
+
+    if (orderRes.rowCount === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    const order = orderRes.rows[0];
+    const subtotal = parseFloat(order.total_amount);
+    const discount = parseFloat(order.discount_amount || 0);
+    const afterDiscount = subtotal - discount;
+    const tax = afterDiscount * 0.10;
+    const total = afterDiscount + tax;
+
+    // Generate ESC/POS command string
+    const ESC = '\x1B';
+    const GS = '\x1D';
+    
+    let escpos = '';
+    
+    // Initialize printer
+    escpos += `${ESC}@`; // Initialize
+    escpos += `${ESC}a\x01`; // Center align
+    
+    // Header
+    escpos += `${ESC}!\x38`; // Double height + width + bold
+    escpos += 'SMART RESTAURANT\n';
+    escpos += `${ESC}!\x00`; // Normal
+    escpos += '123 Nguyen Hue, Q.1, HCMC\n';
+    escpos += 'Tel: 028 1234 5678\n';
+    escpos += '================================\n';
+    
+    // Bill info
+    escpos += `${ESC}!\x10`; // Bold
+    escpos += 'HOA DON THANH TOAN\n';
+    escpos += `${ESC}!\x00`; // Normal
+    escpos += `${ESC}a\x00`; // Left align
+    escpos += `So HD: #${id.slice(-8).toUpperCase()}\n`;
+    escpos += `Ban: ${order.table_number}\n`;
+    escpos += `Ngay: ${new Date(order.created_at).toLocaleString('vi-VN')}\n`;
+    escpos += '================================\n';
+    
+    // Items
+    order.items.forEach((item) => {
+      const itemName = item.name.length > 20 ? item.name.substring(0, 18) + '..' : item.name;
+      const qty = item.quantity.toString().padStart(2);
+      const price = parseFloat(item.total).toLocaleString().padStart(10);
+      escpos += `${itemName}\n`;
+      escpos += `  ${qty} x ${parseFloat(item.price).toLocaleString()}  ${price}d\n`;
+    });
+    
+    escpos += '================================\n';
+    
+    // Totals
+    escpos += `Tam tinh:${subtotal.toLocaleString().padStart(20)}d\n`;
+    if (discount > 0) {
+      escpos += `Giam gia:${('-' + discount.toLocaleString()).padStart(20)}d\n`;
+    }
+    escpos += `VAT (10%):${tax.toLocaleString().padStart(19)}d\n`;
+    escpos += '================================\n';
+    escpos += `${ESC}!\x30`; // Double height + bold
+    escpos += `TONG:${total.toLocaleString().padStart(24)}d\n`;
+    escpos += `${ESC}!\x00`; // Normal
+    escpos += '================================\n';
+    
+    // Footer
+    escpos += `${ESC}a\x01`; // Center
+    escpos += '\nCam on quy khach!\n';
+    escpos += 'Hen gap lai!\n\n\n';
+    
+    // Cut paper
+    escpos += `${GS}V\x00`; // Full cut
+    
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(escpos);
+  } catch (err) {
+    next(err);
+  }
+};
+
