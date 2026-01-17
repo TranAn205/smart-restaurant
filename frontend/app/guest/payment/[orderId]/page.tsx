@@ -7,17 +7,6 @@ import { Button } from "@/components/ui/button"
 import { formatPrice } from "@/lib/menu-data"
 import { paymentAPI, orderAPI } from "@/lib/api"
 
-// Prevent external script errors
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    // Suppress ZaloPay and other third-party script errors
-    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
-      e.preventDefault();
-      console.warn('Suppressed external script error:', e.message);
-      return false;
-    }
-  });
-}
 
 interface Receipt {
   restaurant: string
@@ -40,6 +29,7 @@ interface Order {
   user_id?: string | null
   status: string
   total_amount: number
+  discount_amount?: number
   created_at: string
 }
 
@@ -84,7 +74,7 @@ export default function PaymentSuccessPage({ params }: { params: Promise<{ order
 
 
   // Get total from receipt or order (already includes everything)
-  const total = receipt?.total || order?.total_amount || 0
+  const total = receipt?.total || (order ? order.total_amount - (order.discount_amount || 0) : 0)
 
   if (isLoading) {
     return (

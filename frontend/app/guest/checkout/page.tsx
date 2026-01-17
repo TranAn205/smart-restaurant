@@ -1,4 +1,5 @@
 "use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -15,15 +16,18 @@ import { orderAPI, customerAPI } from "@/lib/api";
 export default function CheckoutPage() {
   const router = useRouter();
   const { state, subtotal, dispatch } = useCart();
-  const [tableId, setTableId] = useState<string | null>(null);
-  const [customerToken, setCustomerToken] = useState<string | null>(null);
+  const [tableId, setTableId] = useState<string>("");
+  const [customerToken, setCustomerToken] = useState<string>("");
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [loyaltyPoints, setLoyaltyPoints] = useState<number>(0);
   const [tableNumber, setTableNumber] = useState<string>("");
+
+  // Loyalty points redemption state
+  const [pointsToUse, setPointsToUse] = useState<number | "">("");
 
   useEffect(() => {
     // Get table ID from guest_table (saved when scanning QR)
@@ -31,19 +35,19 @@ export default function CheckoutPage() {
     if (guestTable) {
       try {
         const parsed = JSON.parse(guestTable);
-        setTableId(parsed.tableId || null);
+        setTableId(parsed.tableId || "");
         setTableNumber(parsed.tableNumber || parsed.tableId || "");
       } catch {
         // Fallback to old format
-        setTableId(localStorage.getItem("tableId") || null);
+        setTableId(localStorage.getItem("tableId") || "");
       }
     } else {
-      setTableId(localStorage.getItem("tableId") || null);
+      setTableId(localStorage.getItem("tableId") || "");
     }
 
     // Get customer info
-    const storedToken = localStorage.getItem("customerToken");
-    const storedName = localStorage.getItem("customerName");
+    const storedToken = localStorage.getItem("customerToken") || "";
+    const storedName = localStorage.getItem("customerName") || "";
     setCustomerToken(storedToken);
     if (storedName) setCustomerName(storedName);
 
@@ -61,10 +65,8 @@ export default function CheckoutPage() {
       setError("Không tìm thấy thông tin bàn. Vui lòng quét QR lại.");
       return;
     }
-    
     setIsLoading(true);
     setError("");
-
     try {
       // Map cart items to API format
       const orderItems = state.items.map((item) => ({
@@ -78,8 +80,6 @@ export default function CheckoutPage() {
         notes: item.notes || undefined,
       }));
 
-      console.log("Sending order request...", { tableId, items: orderItems });
-
       // Call real API - userId will be extracted from token by backend middleware
       const response = await orderAPI.createOrder({
         tableId: tableId,
@@ -87,20 +87,25 @@ export default function CheckoutPage() {
         // Don't send customerId - backend will get it from Authorization header
       });
 
-      console.log("Order response:", response);
-
-      // Clear cart
-      dispatch({ type: "CLEAR_CART" });
-
       // Get order ID from response
-      const orderId = response.data?.order_id || response.data?.id || response.order_id || response.id;
-      
+      const orderId = response.data?.order_id || response.data?.id;
       if (!orderId) {
         console.error("No order ID in response:", response);
         throw new Error("Không nhận được mã đơn hàng");
       }
 
-      console.log("Navigating to order:", orderId);
+      // Apply points if user entered any
+      if (customerToken && pointsToUse && Number(pointsToUse) > 0) {
+        try {
+          await orderAPI.usePoints(orderId, Number(pointsToUse));
+        } catch (err) {
+          console.error('Failed to apply points:', err);
+          // Continue anyway, order is already created
+        }
+      }
+
+      // Clear cart
+      dispatch({ type: "CLEAR_CART" });
 
       // Navigate to active orders page instead of specific order
       router.push("/guest/active-orders");
@@ -129,7 +134,7 @@ export default function CheckoutPage() {
           <p className="mt-2 text-muted-foreground">
             Hãy thêm món ăn vào giỏ hàng trước khi đặt
           </p>
-          <Button className="mt-6" onClick={() => router.push("/menu/guest")}>
+          <Button className="mt-6" onClick={() => router.push("/menu/guest")}> 
             Xem Menu
           </Button>
         </div>
@@ -148,12 +153,6 @@ export default function CheckoutPage() {
       </header>
 
       <main className="mx-auto max-w-lg p-4">
-        {/* Error Display */}
-        {error && (
-          <div className="mb-4 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
 
         {/* Table Info */}
         <div className="mb-4 flex items-center gap-3 rounded-lg border border-border bg-card p-4">
@@ -178,16 +177,24 @@ export default function CheckoutPage() {
                 <Gift className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1">
-                <p className="font-medium text-card-foreground">
-                  Điểm tích lũy
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {loyaltyPoints.toLocaleString()} điểm
-                </p>
+                <p className="font-medium text-card-foreground">Điểm tích lũy</p>
+                <p className="text-sm text-muted-foreground">{loyaltyPoints.toLocaleString()} điểm</p>
+                <div className="mt-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={loyaltyPoints}
+                    value={typeof pointsToUse !== 'undefined' ? pointsToUse : ''}
+                    onChange={e => {
+                      const val = parseInt(e.target.value, 10);
+                      setPointsToUse(Number.isNaN(val) ? '' : Math.max(0, Math.min(loyaltyPoints, val)));
+                    }}
+                    placeholder="Nhập điểm muốn dùng (1 điểm = 1đ)"
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Nhập số điểm bạn muốn sử dụng. Điểm sẽ được áp dụng khi đặt món.</p>
+                </div>
               </div>
-              <Button variant="outline" size="sm">
-                Đổi điểm
-              </Button>
             </div>
           </div>
         )}
@@ -256,10 +263,16 @@ export default function CheckoutPage() {
       {/* Fixed Bottom Summary */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card p-4">
         <div className="mx-auto max-w-lg">
+          {pointsToUse && Number(pointsToUse) > 0 && (
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-muted-foreground">Giảm giá từ điểm</span>
+              <span className="text-lg font-bold text-success">- {formatPrice(Number(pointsToUse))}</span>
+            </div>
+          )}
           <div className="mb-4 flex items-center justify-between">
             <span className="text-muted-foreground">Tổng cộng</span>
             <span className="text-xl font-bold text-primary">
-              {formatPrice(subtotal)}
+              {formatPrice(Math.max(0, subtotal - (pointsToUse && Number(pointsToUse) > 0 ? Number(pointsToUse) : 0)))}
             </span>
           </div>
           <Button

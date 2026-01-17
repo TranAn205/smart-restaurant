@@ -7,21 +7,12 @@ import { ArrowLeft, Clock, CheckCircle, ChefHat, Bell, Sparkles, CreditCard, Plu
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { formatPrice } from "@/lib/menu-data"
-import { orderAPI } from "@/lib/api"
+import { orderAPI, reviewsAPI } from "@/lib/api"
 import { toast } from "sonner"
 import io from "socket.io-client"
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
 
-// Prevent external script errors
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
-      e.preventDefault();
-      return false;
-    }
-  });
-}
 
 interface Order {
   id: string
@@ -29,6 +20,7 @@ interface Order {
   table_number?: string
   status: "pending" | "accepted" | "preparing" | "ready" | "served" | "paid"
   total_amount: number
+  discount_amount?: number
   created_at: string
   notes?: string
   items: Array<{
@@ -59,6 +51,7 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
   const [isLoading, setIsLoading] = useState(true)
   const [billRequested, setBillRequested] = useState(false)
   const [isRequestingBill, setIsRequestingBill] = useState(false)
+  const [myReviews, setMyReviews] = useState<any[]>([])
 
   const fetchOrder = async () => {
     try {
@@ -74,7 +67,10 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
 
   useEffect(() => {
     fetchOrder()
-    
+    // Lấy danh sách review của user
+    reviewsAPI.getMyReviews().then((data) => {
+      setMyReviews(data || [])
+    }).catch(() => setMyReviews([]))
     // Socket connection for payment status
     const tableFromStorage = localStorage.getItem("guest_table")
     let tableId = null
@@ -84,33 +80,24 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
         tableId = parsed.tableId
       } catch {}
     }
-
     const newSocket = io(API_BASE)
-    
     newSocket.on("connect", () => {
-      console.log("Guest order detail connected to socket")
       if (tableId) {
         newSocket.emit("join:table", tableId)
       }
     })
-
     newSocket.on("order:paid", (data: { orderId: string; message?: string }) => {
-      console.log("Payment confirmed for order:", data)
       if (data.orderId === orderId) {
         toast.success("Thanh toán thành công!", {
           description: "Cảm ơn bạn đã sử dụng dịch vụ. Vui lòng đánh giá món ăn.",
           duration: 3000,
         })
-        // Redirect to payment success page
         setTimeout(() => {
           router.push(`/guest/payment/${orderId}`)
         }, 1500)
       }
     })
-
-    // Poll for updates every 5 seconds
     const interval = setInterval(fetchOrder, 5000)
-    
     return () => {
       clearInterval(interval)
       newSocket.disconnect()
@@ -192,64 +179,80 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
             <h3 className="font-semibold text-card-foreground">Món đã đặt ({order.items.length})</h3>
           </div>
           <div className="divide-y divide-border">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex gap-3 p-4">
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
-                  {item.item_image ? (
-                    <Image
-                      src={item.item_image}
-                      alt={item.item_name}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                      <span className="text-2xl">🍽️</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-card-foreground">{item.item_name}</h4>
-                        {item.status && (
-                          <Badge 
-                            variant="outline" 
-                            className={
-                              item.status === "pending" ? "bg-yellow-50 text-yellow-700 border-yellow-300" :
-                              item.status === "preparing" ? "bg-blue-50 text-blue-700 border-blue-300" :
-                              item.status === "ready" ? "bg-green-50 text-green-700 border-green-300" :
-                              item.status === "served" ? "bg-gray-50 text-gray-700 border-gray-300" : ""
-                            }
-                          >
-                            {item.status === "pending" && <Clock className="mr-1 h-3 w-3" />}
-                            {item.status === "preparing" && <ChefHat className="mr-1 h-3 w-3" />}
-                            {item.status === "ready" && <Bell className="mr-1 h-3 w-3" />}
-                            {item.status === "served" && <Sparkles className="mr-1 h-3 w-3" />}
-                            {item.status === "pending" ? "Chờ" :
-                             item.status === "preparing" ? "Đang nấu" :
-                             item.status === "ready" ? "Sẵn sàng" :
-                             item.status === "served" ? "Đã phục vụ" : ""}
-                          </Badge>
+            {order.items.map((item, index) => {
+              // Kiểm tra đã review chưa
+              const reviewed = myReviews.some(r => r.item_id === item.id || r.menu_item_id === item.id)
+              return (
+                <div key={index} className="flex gap-3 p-4">
+                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+                    {item.item_image ? (
+                      <Image
+                        src={item.item_image}
+                        alt={item.item_name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-muted">
+                        <span className="text-2xl">🍽️</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-card-foreground">{item.item_name}</h4>
+                          {item.status && (
+                            <Badge 
+                              variant="outline" 
+                              className={
+                                item.status === "pending" ? "bg-yellow-50 text-yellow-700 border-yellow-300" :
+                                item.status === "accepted" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+                                item.status === "preparing" ? "bg-blue-50 text-blue-700 border-blue-300" :
+                                item.status === "ready" ? "bg-green-50 text-green-700 border-green-300" :
+                                item.status === "served" ? "bg-gray-50 text-gray-700 border-gray-300" : ""
+                              }
+                            >
+                              {item.status === "pending" && <Clock className="mr-1 h-3 w-3" />}
+                              {item.status === "accepted" && <CheckCircle className="mr-1 h-3 w-3" />}
+                              {item.status === "preparing" && <ChefHat className="mr-1 h-3 w-3" />}
+                              {item.status === "ready" && <Bell className="mr-1 h-3 w-3" />}
+                              {item.status === "served" && <Sparkles className="mr-1 h-3 w-3" />}
+                              {item.status === "pending" ? "Chờ" :
+                               item.status === "accepted" ? "Đã duyệt" :
+                               item.status === "preparing" ? "Đang nấu" :
+                               item.status === "ready" ? "Sẵn sàng" :
+                               item.status === "served" ? "Đã phục vụ" : ""}
+                            </Badge>
+                          )}
+                        </div>
+                        {item.modifiers_selected && (
+                          <p className="text-xs text-muted-foreground">
+                            {typeof item.modifiers_selected === 'string'
+                              ? item.modifiers_selected
+                              : Array.isArray(item.modifiers_selected)
+                                ? item.modifiers_selected.map((m: any) => m.name).join(", ")
+                                : ""}
+                          </p>
                         )}
                       </div>
-                      {item.modifiers_selected && (
-                        <p className="text-xs text-muted-foreground">
-                          {typeof item.modifiers_selected === 'string'
-                            ? item.modifiers_selected
-                            : Array.isArray(item.modifiers_selected)
-                              ? item.modifiers_selected.map((m: any) => m.name).join(", ")
-                              : ""}
-                        </p>
-                      )}
+                      <span className="text-sm text-muted-foreground">x{item.quantity}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">x{item.quantity}</span>
+                    <p className="mt-1 font-medium text-primary">{formatPrice(item.total_price)}</p>
+                    {/* Nút review */}
+                    {order.status === 'paid' && !reviewed && (
+                      <Button className="mt-2" size="sm" variant="secondary" onClick={() => router.push(`/guest/review/${item.id}`)}>
+                        Đánh giá món này
+                      </Button>
+                    )}
+                    {order.status === 'paid' && reviewed && (
+                      <span className="mt-2 inline-block text-xs text-muted-foreground">Đã đánh giá</span>
+                    )}
                   </div>
-                  <p className="mt-1 font-medium text-primary">{formatPrice(item.total_price)}</p>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
 
@@ -257,7 +260,9 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
         <div className="mb-6 rounded-lg border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <span className="font-medium text-card-foreground">Tổng cộng</span>
-            <span className="text-xl font-bold text-primary">{formatPrice(order.total_amount)}</span>
+            <span className="text-xl font-bold text-primary">
+              {formatPrice(order.total_amount - (order.discount_amount || 0))}
+            </span>
           </div>
         </div>
 

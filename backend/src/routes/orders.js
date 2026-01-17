@@ -36,4 +36,10 @@ router.patch("/:id/discount", ordersController.applyDiscount);
 // GET /api/orders/:id/bill/pdf - Download bill as PDF
 router.get("/:id/bill/pdf", ordersController.generateBillPDF);
 
+const { requireCustomer } = require("../middleware/authMiddleware");
+const usePointsController = require("../controllers/usepoints.controller");
+
+// PATCH /api/orders/:id/use-points - Khách dùng điểm trừ vào tiền đơn hàng
+router.patch("/:id/use-points", requireCustomer, usePointsController.usePoints);
+
 module.exports = router;

@@ -38,12 +38,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatPrice } from "@/lib/menu-data";
 import { waiterAPI, paymentAPI } from "@/lib/api";
+
+// Sử dụng biến môi trường chuẩn Next.js
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.3:4000/api";
+const API_BASE = API_URL.replace("/api", "");
 import io from "socket.io-client";
 import { toast } from "sonner";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.3:4000/api";
-const API_BASE = API_URL.replace("/api", "");
 
 interface OrderItem {
   id: string;
@@ -60,6 +60,7 @@ interface WaiterOrder {
   table_number: string;
   customer_name?: string;
   total_amount: string;
+  discount_amount?: string;
   status: "pending" | "accepted" | "preparing" | "ready" | "served" | "paid";
   created_at: string;
   notes?: string;
@@ -646,7 +647,7 @@ export default function WaiterOrdersPage() {
                         {order.items.map((item, index) => (
                           <div
                             key={index}
-                            className="flex justify-between text-sm"
+                            className="flex justify-between items-center text-sm gap-2"
                           >
                             <span className="text-card-foreground">
                               {item.quantity}x {item.item_name}
@@ -654,6 +655,23 @@ export default function WaiterOrdersPage() {
                             <span className="text-muted-foreground">
                               {formatPrice(parseFloat(item.total_price))}
                             </span>
+                            {item.status === "pending" && (
+                              <Button
+                                size="sm"
+                                className="ml-2 bg-green-600 hover:bg-green-700"
+                                onClick={async () => {
+                                  try {
+                                    await waiterAPI.acceptOrderItem(item.id);
+                                    fetchOrders();
+                                  } catch (err) {
+                                    alert("Duyệt món thất bại");
+                                  }
+                                }}
+                              >
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Duyệt
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -668,7 +686,7 @@ export default function WaiterOrdersPage() {
 
                       <div className="flex items-center justify-between border-t border-border pt-3">
                         <span className="font-bold text-primary">
-                          {formatPrice(parseFloat(order.total_amount))}
+                          {formatPrice(parseFloat(order.total_amount) - (parseFloat(order.discount_amount || '0')))}
                         </span>
 
                         {/* Actions based on status */}

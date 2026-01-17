@@ -1,3 +1,4 @@
+
 /**
  * Waiter Routes
  * MVC Pattern: Routes only define endpoints, logic is in controller
@@ -6,6 +7,9 @@
 const express = require('express');
 const router = express.Router();
 const waiterController = require('../controllers/waiter.controller');
+
+// PATCH /api/waiter/items/:itemId/accept - Accept individual order item
+router.patch('/items/:itemId/accept', waiterController.acceptOrderItem);
 
 // GET /api/waiter/orders - Get orders for waiter
 router.get('/orders', waiterController.getOrders);
