@@ -36,4 +36,8 @@ router.patch("/:id/discount", ordersController.applyDiscount);
 // GET /api/orders/:id/bill/pdf - Download bill as PDF
 router.get("/:id/bill/pdf", ordersController.generateBillPDF);
 
+// GET /api/orders/:id/bill/thermal - Get thermal printer commands
+router.get("/:id/bill/thermal", ordersController.generateThermalBill);
+
 module.exports = router;
+
