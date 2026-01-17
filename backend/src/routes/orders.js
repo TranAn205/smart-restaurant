@@ -41,5 +41,8 @@ const usePointsController = require("../controllers/usepoints.controller");
 
 // PATCH /api/orders/:id/use-points - Khách dùng điểm trừ vào tiền đơn hàng
 router.patch("/:id/use-points", requireCustomer, usePointsController.usePoints);
+// GET /api/orders/:id/bill/thermal - Get thermal printer commands
+router.get("/:id/bill/thermal", ordersController.generateThermalBill);
 
 module.exports = router;
+

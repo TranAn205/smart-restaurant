@@ -42,6 +42,7 @@ import { waiterAPI, paymentAPI } from "@/lib/api";
 // Sử dụng biến môi trường chuẩn Next.js
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.3:4000/api";
 const API_BASE = API_URL.replace("/api", "");
+import { BillPrintDialog } from "@/components/waiter/BillPrintDialog";
 import io from "socket.io-client";
 import { toast } from "sonner";
 
@@ -135,6 +136,11 @@ export default function WaiterOrdersPage() {
   const [waiterName, setWaiterName] = useState("Waiter");
   const [paymentRequests, setPaymentRequests] = useState<PaymentRequest[]>([]);
   const [socket, setSocket] = useState<any>(null);
+  const [billPrintDialog, setBillPrintDialog] = useState<{
+    open: boolean;
+    orderId: string;
+    tableNumber: string;
+  } | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -338,46 +344,65 @@ export default function WaiterOrdersPage() {
     updateOrderStatus(orderId, "served");
   };
 
-  const handleMarkAsPaid = async (orderId: string) => {
+  const handleMarkAsPaid = async (orderId: string, tableNumber: string) => {
+    // Open dialog instead of direct payment
+    setBillPrintDialog({ open: true, orderId, tableNumber });
+  };
+
+  const confirmPayment = async () => {
+    if (!billPrintDialog) return;
+    
     try {
-      await paymentAPI.processPayment(orderId, "cash");
+      await paymentAPI.processPayment(billPrintDialog.orderId, "cash");
       
-      // Remove from payment requests if exists
-      setPaymentRequests(prev => 
-        prev.filter(req => !req.orderIds.includes(orderId))
+      setPaymentRequests(prev =>
+        prev.filter(req => !req.orderIds.includes(billPrintDialog.orderId))
       );
       
       fetchOrders();
+      toast.success("Thanh toán thành công!");
     } catch (error: any) {
       console.error("Error marking as paid:", error);
-      alert(error.message || "Có lỗi xảy ra");
+      toast.error(error.message || "Có lỗi xảy ra");
+      throw error;
     }
   };
 
   const handleConfirmPaymentRequest = async (request: PaymentRequest) => {
-    try {
-      // Process all orders in the request
-      for (const orderId of request.orderIds) {
-        await paymentAPI.processPayment(orderId, "cash");
+    // Open dialog with first order ID for bill printing
+    setBillPrintDialog({ 
+      open: true, 
+      orderId: request.orderIds[0], 
+      tableNumber: request.tableNumber 
+    });
+    
+    // Store all order IDs for batch payment
+    const confirmBatchPayment = async () => {
+      try {
+        for (const orderId of request.orderIds) {
+          await paymentAPI.processPayment(orderId, "cash");
+        }
+        
+        setPaymentRequests(prev => 
+          prev.filter(req => req.tableId !== request.tableId)
+        );
+        
+        fetchOrders();
+        toast.success("Xác nhận thanh toán thành công!", {
+          description: `Đã xác nhận thanh toán cho bàn ${request.tableNumber}`,
+          duration: 3000,
+        });
+      } catch (error: any) {
+        console.error("Error confirming payment:", error);
+        toast.error("Xác nhận thanh toán thất bại", {
+          description: error.message || "Có lỗi xảy ra",
+        });
+        throw error;
       }
-      
-      // Remove from payment requests
-      setPaymentRequests(prev => 
-        prev.filter(req => req.tableId !== request.tableId)
-      );
-      
-      fetchOrders();
-      
-      toast.success("Xác nhận thanh toán thành công!", {
-        description: `Đã xác nhận thanh toán cho bàn ${request.tableNumber}`,
-        duration: 3000,
-      });
-    } catch (error: any) {
-      console.error("Error confirming payment:", error);
-      toast.error("Xác nhận thanh toán thất bại", {
-        description: error.message || "Có lỗi xảy ra",
-      });
-    }
+    };
+    
+    // Override confirmPayment temporarily for this request
+    (window as any)._tempConfirmFn = confirmBatchPayment;
   };
 
   const handleDismissPaymentRequest = (tableId: string) => {
@@ -737,7 +762,7 @@ export default function WaiterOrdersPage() {
                                   <Button
                                     className="bg-green-600 hover:bg-green-700"
                                     size="sm"
-                                    onClick={() => handleMarkAsPaid(order.id)}
+                                    onClick={() => handleMarkAsPaid(order.id, order.table_number)}
                                   >
                                     <CreditCard className="mr-1 h-4 w-4" />
                                     Thanh toán
@@ -893,6 +918,21 @@ export default function WaiterOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bill Print Dialog */}
+      {billPrintDialog && (
+        <BillPrintDialog
+          open={billPrintDialog.open}
+          onOpenChange={(open) =>
+            setBillPrintDialog(open ? billPrintDialog : null)
+          }
+          orderId={billPrintDialog.orderId}
+          tableNumber={billPrintDialog.tableNumber}
+          onConfirm={
+            (window as any)._tempConfirmFn || confirmPayment
+          }
+        />
+      )}
     </div>
   );
 }
