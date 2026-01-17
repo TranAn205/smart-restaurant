@@ -116,17 +116,22 @@ exports.create = async (req, res, next) => {
 
 /**
  * GET /api/menu/my-reviews
- * Get current customer's reviews
+ * Get current customer's reviews (optional auth)
  */
 exports.getMyReviews = async (req, res, next) => {
   try {
-    const customer_id = req.customer.customerId;
+    // If no customer logged in, return empty array
+    if (!req.customer || !req.customer.userId) {
+      return res.json([]);
+    }
+    
+    const customer_id = req.customer.userId || req.customer.customerId;
     const { rows } = await db.query(
       `
       SELECT r.*, m.name as item_name, m.price
-      FROM item_reviews r
+      FROM reviews r
       JOIN menu_items m ON r.menu_item_id = m.id
-      WHERE r.customer_id = $1
+      WHERE r.user_id = $1
       ORDER BY r.created_at DESC
     `,
       [customer_id]
