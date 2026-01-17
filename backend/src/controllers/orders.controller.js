@@ -13,26 +13,25 @@ const { getIO } = require("../socket");
 exports.getAll = async (req, res, next) => {
   try {
     const { status, limit = 50 } = req.query;
+    const params = [];
 
     let query = `
-            SELECT o.*, t.table_number,
-                   json_agg(
-                       json_build_object(
-                           'id', oi.id,
-                           'item_name', mi.name,
-                           'quantity', oi.quantity,
-                           'price_per_unit', oi.price_per_unit,
-                           'total_price', oi.total_price,
-                           'status', oi.status
-                       )
-                   ) FILTER (WHERE oi.id IS NOT NULL) as items
-            FROM orders o
-            LEFT JOIN tables t ON o.table_id = t.id
-            LEFT JOIN order_items oi ON o.id = oi.order_id
-            LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
-        `;
-
-    const params = [];
+        SELECT o.*, t.table_number,
+             json_agg(
+               json_build_object(
+                 'id', oi.id,
+                 'item_name', mi.name,
+                 'quantity', oi.quantity,
+                 'price_per_unit', oi.price_per_unit,
+                 'total_price', oi.total_price,
+                 'status', oi.status
+               )
+             ) FILTER (WHERE oi.id IS NOT NULL) as items
+        FROM orders o
+        LEFT JOIN tables t ON o.table_id = t.id
+        LEFT JOIN order_items oi ON o.id = oi.order_id
+        LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
+      `;
     if (status) {
       query += ` WHERE o.status = $1`;
       params.push(status);
@@ -61,8 +60,8 @@ exports.create = async (req, res, next) => {
     const { table_id, tableId, items, customer_name, customerId, notes } = req.body;
     const finalTableId = tableId || table_id;
 
-    if (!finalTableId || !items || items.length === 0) {
-      return res.status(400).json({ message: "Missing tableId or items" });
+    if (!finalTableId) {
+      return res.status(400).json({ message: "Missing tableId" });
     }
 
     const tableRes = await db.query("SELECT id, table_number FROM tables WHERE id = $1", [
@@ -123,22 +122,23 @@ exports.create = async (req, res, next) => {
     let grandTotal = 0;
     const processedItems = [];
 
-    for (const item of items) {
-      // Support both old format (menu_item_id) and new format (itemId)
-      const itemId = item.itemId || item.menu_item_id;
-      const itemRes = await client.query(
-        "SELECT price, name FROM menu_items WHERE id = $1",
-        [itemId]
-      );
-      if (itemRes.rowCount === 0)
-        throw new Error(`Item ${itemId} not found`);
+    if (items && items.length > 0) {
+      for (const item of items) {
+        // Support both old format (menu_item_id) and new format (itemId)
+        const itemId = item.itemId || item.menu_item_id;
+        const itemRes = await client.query(
+          "SELECT price, name FROM menu_items WHERE id = $1",
+          [itemId]
+        );
+        if (itemRes.rowCount === 0)
+          throw new Error(`Item ${itemId} not found`);
 
-      const basePrice = parseFloat(itemRes.rows[0].price);
-      let modifiersPrice = 0;
+        const basePrice = parseFloat(itemRes.rows[0].price);
+        let modifiersPrice = 0;
 
-      if (item.modifiers && Array.isArray(item.modifiers)) {
-        modifiersPrice = item.modifiers.reduce(
-          (sum, mod) => sum + parseFloat(mod.price || 0),
+        if (item.modifiers && Array.isArray(item.modifiers)) {
+          modifiersPrice = item.modifiers.reduce(
+            (sum, mod) => sum + parseFloat(mod.price || 0),
           0
         );
       }
@@ -156,22 +156,23 @@ exports.create = async (req, res, next) => {
         modifiers_json: JSON.stringify(item.modifiers || []),
         notes: item.notes,
       });
-    }
+      }
 
-    for (const pItem of processedItems) {
-      await client.query(
-        `INSERT INTO order_items (order_id, menu_item_id, quantity, price_per_unit, total_price, modifiers_selected, notes, status)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
-        [
-          orderId,
-          pItem.menu_item_id,
-          pItem.quantity,
-          pItem.price_per_unit,
-          pItem.total_price,
-          pItem.modifiers_json,
-          pItem.notes,
-        ]
-      );
+      for (const pItem of processedItems) {
+        await client.query(
+          `INSERT INTO order_items (order_id, menu_item_id, quantity, price_per_unit, total_price, modifiers_selected, notes, status)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')`,
+          [
+            orderId,
+            pItem.menu_item_id,
+            pItem.quantity,
+            pItem.price_per_unit,
+            pItem.total_price,
+            pItem.modifiers_json,
+            pItem.notes,
+          ]
+        );
+      }
     }
 
     // Update total amount
@@ -180,7 +181,7 @@ exports.create = async (req, res, next) => {
         "UPDATE orders SET total_amount = $1 WHERE id = $2",
         [grandTotal, orderId]
       );
-    } else {
+    } else if (grandTotal > 0) {
       await client.query(
         "UPDATE orders SET total_amount = total_amount + $1, updated_at = NOW() WHERE id = $2",
         [grandTotal, orderId]
@@ -190,23 +191,25 @@ exports.create = async (req, res, next) => {
     await client.query("COMMIT");
 
     // --- SOCKET EMIT (REAL-TIME) ---
-    try {
-      const io = getIO();
-      const eventType = isNewOrder ? "order:new" : "order:updated";
-      io.to("role:waiter").emit(eventType, {
-        orderId: orderId,
-        tableNumber: tableNumber,
-        tableId: finalTableId,
-        total: grandTotal,
-        items: processedItems,
-        isNewOrder,
-      });
-      io.to(`table:${finalTableId}`).emit("order:update", {
-        status: "pending",
-        orderId: orderId,
-      });
-    } catch (sErr) {
-      console.error("Socket emit error:", sErr.message);
+    if (items && items.length > 0) {
+      try {
+        const io = getIO();
+        const eventType = isNewOrder ? "order:new" : "order:updated";
+        io.to("role:waiter").emit(eventType, {
+          orderId: orderId,
+          tableNumber: tableNumber,
+          tableId: finalTableId,
+          total: grandTotal,
+          items: processedItems,
+          isNewOrder,
+        });
+        io.to(`table:${finalTableId}`).emit("order:update", {
+          status: "pending",
+          orderId: orderId,
+        });
+      } catch (sErr) {
+        console.error("Socket emit error:", sErr.message);
+      }
     }
     // -------------------------------
 
@@ -226,8 +229,7 @@ exports.create = async (req, res, next) => {
   } finally {
     client.release();
   }
-};
-
+}
 /**
  * PATCH /api/orders/:id/items
  * Add items to existing order
@@ -530,9 +532,11 @@ exports.applyDiscount = async (req, res, next) => {
     }
 
     const orderRes = await db.query("SELECT total_amount FROM orders WHERE id = $1", [id]);
-    if (orderRes.rowCount === 0) {
-      return res.status(404).json({ message: "Order not found" });
+    if (!finalTableId) {
+      return res.status(400).json({ message: "Missing tableId" });
     }
+    // Cho phép items rỗng khi tạo đơn nháp (draft)
+    // Nếu items có phần tử thì mới kiểm tra và thêm vào order_items
 
     const total = parseFloat(orderRes.rows[0].total_amount);
     let discountAmount = 0;

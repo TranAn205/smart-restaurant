@@ -22,15 +22,6 @@ import io from "socket.io-client";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
 
-// Prevent external script errors
-if (typeof window !== 'undefined') {
-  window.addEventListener('error', (e) => {
-    if (e.message && (e.message.includes('zaloJSV2') || e.message.includes('is not defined'))) {
-      e.preventDefault();
-      return false;
-    }
-  });
-}
 
 interface Order {
   id: string;
@@ -38,6 +29,7 @@ interface Order {
   table_number: number;
   status: "pending" | "accepted" | "preparing" | "ready" | "served" | "paid";
   total_amount: number;
+  discount_amount?: number;
   created_at: string;
   items: Array<{
     id: string;
@@ -276,7 +268,7 @@ export default function ActiveOrdersPage() {
                         Tổng cộng
                       </span>
                       <span className="font-bold text-primary">
-                        {formatPrice(order.total_amount)}
+                        {formatPrice(order.total_amount - (order.discount_amount || 0))}
                       </span>
                     </div>
                   </div>

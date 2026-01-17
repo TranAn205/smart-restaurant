@@ -1,4 +1,41 @@
 /**
+ * PATCH /api/waiter/items/:itemId/accept
+ * Accept (approve) a single order item
+ */
+exports.acceptOrderItem = async (req, res, next) => {
+  try {
+    const { itemId } = req.params;
+    // Lấy thông tin món
+    const itemRes = await db.query(
+      `SELECT * FROM order_items WHERE id = $1`,
+      [itemId]
+    );
+    if (itemRes.rowCount === 0) return res.status(404).json({ message: 'Item not found' });
+    const item = itemRes.rows[0];
+    if (item.status !== 'pending') {
+      return res.status(400).json({ message: 'Chỉ duyệt được món đang chờ duyệt (pending)' });
+    }
+    // Cập nhật trạng thái món
+    const updateRes = await db.query(
+      `UPDATE order_items SET status = 'accepted' WHERE id = $1 RETURNING *`,
+      [itemId]
+    );
+    // Gửi socket cho kitchen và table
+    const io = getIO();
+    // Kitchen nhận task mới
+    io.to('role:kitchen').emit('order:item_accepted', updateRes.rows[0]);
+    // Báo khách cập nhật trạng thái món
+    const orderRes = await db.query('SELECT table_id FROM orders WHERE id = $1', [item.order_id]);
+    if (orderRes.rowCount > 0) {
+      io.to(`table:${orderRes.rows[0].table_id}`).emit('order:item_update', {
+        itemId,
+        status: 'accepted',
+      });
+    }
+    res.json({ message: 'Món đã được duyệt', item: updateRes.rows[0] });
+  } catch (err) { next(err); }
+};
+/**
  * Waiter Controller
  * Handles all waiter-related business logic
  */

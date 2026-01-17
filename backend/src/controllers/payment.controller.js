@@ -130,13 +130,24 @@ exports.processPayment = async (req, res, next) => {
             "UPDATE orders SET status = 'paid', paid_at = NOW() WHERE id = $1 RETURNING *",
             [id]
         );
-        
         if (updateRes.rowCount === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ message: 'Order not found' });
         }
-
         const order = updateRes.rows[0];
+
+        // Cộng điểm thưởng cho khách hàng nếu có user_id
+        if (order.user_id) {
+            // Quy đổi: 1 điểm cho mỗi 10.000đ (có thể điều chỉnh)
+            const amount = parseFloat(order.total_amount) || 0;
+            const addPoints = Math.floor(amount / 10000);
+            if (addPoints > 0) {
+                await client.query(
+                    "UPDATE users SET total_points = COALESCE(total_points,0) + $1 WHERE id = $2",
+                    [addPoints, order.user_id]
+                );
+            }
+        }
 
         // Get table number
         const tableRes = await client.query(

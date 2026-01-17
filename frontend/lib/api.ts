@@ -310,6 +310,33 @@ export const orderAPI = {
     fetchAPI<{ message: string; order_id: string }>(`/orders/${orderId}/request-bill`, {
       method: "POST",
     }),
+
+  // Use points to discount order (1 điểm = 1đ)
+  usePoints: (orderId: string, points: number) =>
+    fetchAPI<{ message: string; pointsUsed: number }>(`/orders/${orderId}/use-points`, {
+      method: "PATCH",
+      body: JSON.stringify({ points }),
+    }),
+
+  // Get or create draft order for current table/customer
+  getDraftOrder: async (tableId: string) => {
+    // Try to find existing unpaid order for this table
+    const orders = await fetchAPI<any[]>(`/orders/table/${tableId}/order`);
+    if (orders && orders.length > 0) {
+      // Return the first unpaid order
+      return orders[0];
+    }
+    // If not found, create a new order with empty items
+    const resp = await fetchAPI<any>(`/orders`, {
+      method: "POST",
+      body: JSON.stringify({ tableId, items: [] }),
+    });
+    // Return the created order with proper id field
+    if (resp.data) {
+      return { ...resp.data, id: resp.data.order_id || resp.data.id };
+    }
+    return resp;
+  },
 };
 
 // ==================== KITCHEN API ====================
@@ -353,6 +380,12 @@ export const waiterAPI = {
   // Accept order
   acceptOrder: (orderId: string) =>
     fetchAPI<any>(`/waiter/orders/${orderId}/accept`, {
+      method: "PATCH",
+    }),
+
+  // Accept individual order item
+  acceptOrderItem: (itemId: string) =>
+    fetchAPI<any>(`/waiter/items/${itemId}/accept`, {
       method: "PATCH",
     }),
 

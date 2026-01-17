@@ -16,6 +16,7 @@ interface Order {
   table_number: number
   status: string
   total_amount: number
+  discount_amount?: number
   created_at: string
   items: Array<{
     id: string
@@ -107,7 +108,7 @@ export default function PendingPaymentPage() {
     }
   }, [tableId, router])
 
-  const grandTotal = orders.reduce((sum, order) => sum + order.total_amount, 0)
+  const grandTotal = orders.reduce((sum, order) => sum + (order.total_amount - (order.discount_amount || 0)), 0)
 
   const handleRequestPayment = async () => {
     if (orders.length === 0) return
@@ -189,7 +190,21 @@ export default function PendingPaymentPage() {
                     </div>
                     <div className="flex justify-between border-t border-border pt-2">
                       <span className="text-sm text-muted-foreground">Tạm tính</span>
-                      <span className="font-medium text-card-foreground">{formatPrice(order.total_amount)}</span>
+                      <div className="text-right">
+                        {order.discount_amount && order.discount_amount > 0 ? (
+                          <>
+                            <span className="font-medium text-card-foreground">
+                              {formatPrice(order.total_amount - (order.discount_amount || 0))}
+                            </span>
+                            <div className="text-xs text-muted-foreground">
+                              <span className="line-through">{formatPrice(order.total_amount - (order.discount_amount || 0))}</span>
+                              <span className="text-success ml-1">-{formatPrice(order.discount_amount)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <span className="font-medium text-card-foreground">{formatPrice(order.total_amount - (order.discount_amount || 0))}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

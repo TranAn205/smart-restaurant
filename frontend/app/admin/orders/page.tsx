@@ -30,6 +30,7 @@ interface Order {
   table_number?: number;
   customer_name?: string;
   total_amount: string;
+  discount_amount?: string;
   status: string;
   created_at: string;
   items?: Array<{ item_name: string; quantity: number }>;
@@ -254,7 +255,7 @@ export default function OrdersPage() {
                             </span>
                           </td>
                           <td className="py-4 font-medium">
-                            {formatPrice(parseFloat(order.total_amount))}
+                            {formatPrice(parseFloat(order.total_amount) - (parseFloat(order.discount_amount || '0')))}
                           </td>
                           <td className="py-4">
                             <Badge className={config.color}>
