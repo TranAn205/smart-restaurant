@@ -458,7 +458,8 @@ exports.createStripeSession = async (req, res, next) => {
         const discount = parseFloat(order.discount_amount || 0);
         const afterDiscount = subtotal - discount;
         const tax = afterDiscount * 0.10;
-        const total = Math.round((afterDiscount + tax) * 100); // Stripe uses cents
+        // VND is a zero-decimal currency - don't multiply by 100
+        const total = Math.round(afterDiscount + tax);
 
         // Create Stripe Checkout Session
         const clientUrl = process.env.CLIENT_BASE_URL || 'http://localhost:3000';

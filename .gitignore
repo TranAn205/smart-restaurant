@@ -31,6 +31,9 @@ coverage/
 # Markdown docs 
 *.md
 !README.md
+!SETUP_GUIDE.md
+!DEPLOYMENT_GUIDE.md
+!DOCKER_GUIDE.md
 !docs/*.md
 !docs/**/*.md
 
