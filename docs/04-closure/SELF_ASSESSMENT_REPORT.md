@@ -6,11 +6,14 @@ GitHub repo URL: https://github.com/TranAn205/smart-restaurant
 
 # **TEAM INFORMATION**
 
-| Student ID | Full name | Git account | Contribution | Contribution percentage (100% total) | Expected total points | Final total points |
+| Student ID | Full name | Git account | Contribution | Contribution percentage | Expected total points | Final total points |
 | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
-| 23120017 | Trần Thanh An | Gaaus56 | Backend, Database | 33% | 10 |  |
-| 23120061 | Nguyễn Thị Ánh Ngọc | angquoc | Frontend, UI/UX | 33% | 10 |  |
-| 23120190 | Nguyễn Lê Thế Vinh | Zinthw | Leader, Fullstack Development | 34% | 10 |  |
+| 23120017 | Trần Thanh An | Gaaus56 | **Backend & Database:**<br>- Thiết kế Database & Migrations.<br>- Xây dựng API Authentication & User Management.<br>- API quản lý Menu (CRUD), Bàn (Table), Order.<br>- API tích hợp Payment & Revenue Analytics. | 33% | 10 |  |
+| 23120061 | Nguyễn Thị Ánh Ngọc | angquoc | **Frontend Admin & Staff:**<br>- Xây dựng Admin Dashboard & Thống kê.<br>- Giao diện quản lý Menu, Bàn (QR Code).<br>- Giao diện Kitchen Display System (KDS) & Waiter.<br>- Login/Register UI & Auth Guard. | 33% | 10 |  |
+| 23120190 | Nguyễn Lê Thế Vinh | Zinthw | **Leader & Fullstack:**<br>- Guest Interface (Menu, Cart, Checkout).<br>- Tích hợp Socket.io (Real-time updates).<br>- Tính năng Review, Export Report (PDF/Excel), Bill Printing.<br>- Logic VAT, Filter/Sort, Refactor code & Bug fixing. | 34% | 10 |  |
+
+### **Contribution Chart**
+![Contribution Pie Chart](https://quickchart.io/chart?c={type:'pie',data:{labels:['Trần_Thanh_An_(33%)','Nguyễn_Thị_Ánh_Ngọc_(33%)','Nguyễn_Lê_Thế_Vinh_(34%)'],datasets:[{data:[33,33,34],backgroundColor:['%2336a2eb','%23ff6384','%23ffce56']}]}})
 
 # **FEATURE LIST**
 
@@ -58,7 +61,7 @@ GitHub repo URL: https://github.com/TranAn205/smart-restaurant
 |  | › View order status | \-0.25 | 0 |  | Guest can track order status (Received → Preparing → Ready) |
 |  | › View order details | \-0.25 | 0 |  | Order confirmation with items, total, table number |
 |  | › Request bill | \-0.25 | 0 |  | Customer requests bill when ready to pay |
-|  | › Process payment after meal | \-0.25 | -0.25 |  | Stripe payment processing after dining |
+|  | › Process payment after meal | \-0.25 | 0 |  | Stripe payment processing after dining |
 | **3** | **Authentication and authorization** |  |  |  |  |
 |  | Use a popular authentication library | \-1 | 0 |  | Passport.js with JWT strategy |
 |  | Registration (Customer Signup) | \-0.5 | 0 |  | Customer registration with email/password. Real-time email availability check |
@@ -104,7 +107,7 @@ GitHub repo URL: https://github.com/TranAn205/smart-restaurant
 |  | › View order details | \-0.25 | 0 |  | Full order details with items, modifiers, notes |
 |  | › Update order status | \-0.25 | 0 |  | Progress order through states: Received → Preparing → Ready → Completed |
 |  | › Kitchen Display System (KDS) | -0.5 | 0 |  | Real-time order display for kitchen staff with sound notifications |
-|  | › Order Timer and Alerts | -0.25 | 0 |  | Highlight orders exceeding item's configured prep time |
+|  | › Order Timer and Alerts | \-0.25 | 0 |  | Highlight orders exceeding item's configured prep time |
 |  | Table Management |  |  |  |  |
 |  | › Create, edit, deactivate tables | -0.5 | 0 |  | Create, edit, deactivate tables with capacity and location |
 |  | › QR Code Generation | -0.5 | 0 |  | Generate unique QR codes per table with signed tokens |
@@ -145,9 +148,9 @@ GitHub repo URL: https://github.com/TranAn205/smart-restaurant
 
 | Avatar | Username | Commits | Additions | Deletions |
 | :---- | :---- | :---- | :---- | :---- |
-| <img src="https://github.com/TranAn205.png" width="50"> | Tran An | 17 | 7,576 | 21 |
-| <img src="https://github.com/angquoc.png" width="50"> | angquoc | 20 | 15,549 | 661 |
-| <img src="https://github.com/Zinthw.png" width="50"> | Zinthw | 41 | 10,973 | 840 |
+| <img src="https://github.com/TranAn205.png" width="50"> | Tran An | 18 | 7,759 | 1,521 |
+| <img src="https://github.com/angquoc.png" width="50"> | angquoc | 22 | 19,782 | 6,661 |
+| <img src="https://github.com/Zinthw.png" width="50"> | Zinthw | 56 | 21,024 | 5,275 |
 
 ## **Commits** 
 
@@ -194,6 +197,7 @@ GitHub repo URL: https://github.com/TranAn205/smart-restaurant
 | 2026-01-17 | angquoc | feat: add reward points API and fix missing dish status for waiters | 7dbbe95 |
 | 2026-01-17 | Zinthw | feat: Add VAT (10%) breakdown to guest order detail page | 295fac7 |
 | 2026-01-17 | Zinthw | feat: implement VAT display, infinite scroll, role guard and i18n support | f0ecafb |
+| 2026-01-18 | Zinthw | feat: add VietQR and Stripe payment integration | 7dd496d |
 
 ---
 
