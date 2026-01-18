@@ -45,13 +45,13 @@ async function fetchAPI<T>(
     if (endpoint.startsWith("/admin")) {
         token = adminToken || "";
     }
-    // Nếu endpoint bắt đầu bằng /kitchen -> Ưu tiên token kitchen
+    // Nếu endpoint bắt đầu bằng /kitchen -> Ưu tiên token kitchen, fallback to admin
     else if (endpoint.startsWith("/kitchen")) {
-        token = kitchenToken || "";
+        token = kitchenToken || adminToken || "";
     }
-    // Nếu endpoint bắt đầu bằng /waiter -> Ưu tiên token waiter
+    // Nếu endpoint bắt đầu bằng /waiter -> Ưu tiên token waiter, fallback to admin
     else if (endpoint.startsWith("/waiter")) {
-        token = waiterToken || "";
+        token = waiterToken || adminToken || "";
     }
     // Các trường hợp còn lại (như /orders, /customer, /payment...) -> Ưu tiên customer token
     else {
@@ -91,6 +91,14 @@ async function fetchAPI<T>(
            // Avoid infinite loop if already at login
            if (!currentPath.includes("/login")) {
              window.location.href = "/admin/login";
+           }
+        } else if (currentPath.startsWith("/waiter")) {
+           if (!currentPath.includes("/login")) {
+             window.location.href = "/waiter/login";
+           }
+        } else if (currentPath.startsWith("/kitchen")) {
+           if (!currentPath.includes("/login")) {
+             window.location.href = "/kitchen/login";
            }
         } else {
            if (!currentPath.includes("/guest/login")) {
