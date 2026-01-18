@@ -411,14 +411,14 @@ export const waiterAPI = {
 // ==================== PAYMENT API ====================
 
 export const paymentAPI = {
-  // Request payment - guest asks for bill
+  // Request payment - guest asks for bill (cash only)
   requestPayment: (tableId: string, orderIds: string[]) =>
     fetchAPI<{ message: string; orders: any[]; items: any[]; total: number }>(`/payment/request`, {
       method: "POST",
       body: JSON.stringify({ tableId, orderIds }),
     }),
 
-  // Process payment - waiter confirms payment
+  // Process payment - waiter confirms payment (cash)
   processPayment: (orderId: string, method: string = "cash") =>
     fetchAPI<{ message: string; order: any }>(`/payment/orders/${orderId}/pay`, {
       method: "POST",
@@ -432,6 +432,60 @@ export const paymentAPI = {
   // Get payment status
   getPaymentStatus: (orderId: string) =>
     fetchAPI<{ data: any }>(`/payment/orders/${orderId}/status`),
+
+  // ============================================
+  // VIETQR PAYMENT
+  // ============================================
+  
+  // Generate VietQR code for bank transfer
+  generateVietQR: (orderId: string) =>
+    fetchAPI<{
+      success: boolean;
+      qrUrl: string;
+      bankInfo: {
+        bankId: string;
+        accountNo: string;
+        accountName: string;
+        amount: number;
+        description: string;
+      };
+      orderId: string;
+      tableNumber: string;
+    }>(`/payment/vietqr/generate`, {
+      method: "POST",
+      body: JSON.stringify({ orderId }),
+    }),
+
+  // Confirm VietQR payment (auto-confirm, no waiter needed)
+  confirmVietQR: (orderId: string) =>
+    fetchAPI<{ success: boolean; message: string; order: any }>(`/payment/vietqr/confirm`, {
+      method: "POST",
+      body: JSON.stringify({ orderId }),
+    }),
+
+  // ============================================
+  // STRIPE PAYMENT
+  // ============================================
+
+  // Create Stripe Checkout Session
+  createStripeSession: (orderId: string) =>
+    fetchAPI<{
+      success: boolean;
+      sessionId: string;
+      url: string;
+    }>(`/payment/stripe/create-session`, {
+      method: "POST",
+      body: JSON.stringify({ orderId }),
+    }),
+
+  // Verify Stripe session status
+  verifyStripeSession: (sessionId: string) =>
+    fetchAPI<{
+      success: boolean;
+      orderId: string;
+      tableNumber: string;
+      status: string;
+    }>(`/payment/stripe/verify/${sessionId}`),
 };
 
 // ==================== ADMIN API ====================

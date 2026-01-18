@@ -281,6 +281,42 @@ export default function WaiterOrdersPage() {
       fetchOrders(); // Refresh orders
     });
 
+    // Listen for auto-confirmed payments (VietQR, Stripe)
+    // These don't need waiter confirmation, just show bill print option
+    newSocket.on("payment:completed", (data: {
+      orderId: string;
+      tableNumber: string;
+      tableId: string;
+      method: string;
+      message: string;
+    }) => {
+      console.log("Payment completed (auto):", data);
+      
+      // Show toast notification
+      toast.success(`🎉 ${data.message}`, {
+        description: `Phương thức: ${data.method === 'vietqr' ? 'Chuyển khoản' : 'Stripe'}`,
+        duration: 10000,
+        action: {
+          label: "In Bill",
+          onClick: () => {
+            setBillPrintDialog({
+              open: true,
+              orderId: data.orderId,
+              tableNumber: data.tableNumber,
+            });
+          },
+        },
+      });
+
+      // Play notification sound
+      if (isSoundEnabled) {
+        playNotificationSound();
+      }
+
+      // Refresh orders
+      fetchOrders();
+    });
+
     // Poll for updates every 5 seconds
     const interval = setInterval(() => {
       fetchOrders();
@@ -291,7 +327,7 @@ export default function WaiterOrdersPage() {
       clearInterval(interval);
       newSocket.disconnect();
     };
-  }, [fetchOrders, fetchReadyItems, router, isSoundEnabled]);
+  }, [fetchOrders, fetchReadyItems, router, isSoundEnabled, playNotificationSound]);
 
   const filteredOrders = orders.filter((order) => {
     const matchesStatus =

@@ -325,25 +325,10 @@ export default function OrderStatusPage({ params }: { params: Promise<{ orderId:
               className="w-full" 
               size="lg" 
               variant="default"
-              onClick={handleRequestBill}
-              disabled={isRequestingBill || billRequested}
+              onClick={() => router.push("/guest/pending-payment")}
             >
-              {isRequestingBill ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Đang gửi yêu cầu...
-                </>
-              ) : billRequested ? (
-                <>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Đã yêu cầu thanh toán
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Yêu cầu thanh toán
-                </>
-              )}
+              <CreditCard className="mr-2 h-4 w-4" />
+              Thanh toán
             </Button>
           )}
           <Button 
