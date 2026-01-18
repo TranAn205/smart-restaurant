@@ -144,7 +144,7 @@ export default function WaiterOrdersPage() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const token = localStorage.getItem("waiterToken");
+      const token = localStorage.getItem("waiterToken") || localStorage.getItem("admin_token");
       if (!token) return;
 
       const response = await fetch(`${API_URL}/waiter/orders`, {
@@ -189,7 +189,7 @@ export default function WaiterOrdersPage() {
 
   const fetchReadyItems = useCallback(async () => {
     try {
-      const token = localStorage.getItem("waiterToken");
+      const token = localStorage.getItem("waiterToken") || localStorage.getItem("admin_token");
       if (!token) return;
 
       const items = await waiterAPI.getReadyItems();
@@ -208,7 +208,7 @@ export default function WaiterOrdersPage() {
 
   const handleServeItem = async (itemId: string) => {
     try {
-      const token = localStorage.getItem("waiterToken");
+      const token = localStorage.getItem("waiterToken") || localStorage.getItem("admin_token");
       if (!token) return;
 
       await waiterAPI.serveItem(itemId);
@@ -220,9 +220,9 @@ export default function WaiterOrdersPage() {
   };
 
   useEffect(() => {
-    // Check auth
-    const token = localStorage.getItem("waiterToken");
-    const name = localStorage.getItem("waiterName");
+    // Check auth - accept both waiterToken and admin_token
+    const token = localStorage.getItem("waiterToken") || localStorage.getItem("admin_token");
+    const name = localStorage.getItem("waiterName") || localStorage.getItem("adminName");
 
     if (!token) {
       router.push("/waiter/login");
@@ -344,7 +344,7 @@ export default function WaiterOrdersPage() {
     action: "accept" | "reject" | "served"
   ) => {
     try {
-      const token = localStorage.getItem("waiterToken");
+      const token = localStorage.getItem("waiterToken") || localStorage.getItem("admin_token");
       const response = await fetch(
         `${API_URL}/waiter/orders/${orderId}/${action}`,
         {

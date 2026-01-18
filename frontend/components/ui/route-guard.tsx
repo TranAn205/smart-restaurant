@@ -103,12 +103,12 @@ export function RouteGuard({ allowedRoles, children, redirectTo }: RouteGuardPro
       }
 
       // Check if user's role is in allowed roles
+      // Note: Admin already returned above if accessing admin/waiter/kitchen paths
+      // This check is for waiter/kitchen/guest accessing wrong pages
       const hasAccess = allowedRoles.includes(role) || allowedRoles.includes("public")
       if (!hasAccess) {
         // Redirect based on role
-        if (role === "admin") {
-          router.replace("/admin/dashboard")
-        } else if (role === "waiter") {
+        if (role === "waiter") {
           router.replace("/waiter")
         } else if (role === "kitchen") {
           router.replace("/kitchen")
