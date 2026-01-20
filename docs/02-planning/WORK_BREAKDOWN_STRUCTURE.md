@@ -13,7 +13,7 @@
 ## Project Summary
 
 ```
-Smart Restaurant System (100%) ✅ 97% Complete
+Smart Restaurant System (100%) ✅ 99% Complete
 ├── 1. Guest Ordering (30%) ✅ 100%
 ├── 2. Admin Panel (25%) ✅ 100%
 ├── 3. Staff Operations (25%) ✅ 100%
@@ -91,8 +91,8 @@ Smart Restaurant System (100%) ✅ 97% Complete
 | 4.6       | Kitchen APIs    | 3            | Trần Thanh An | 3 | ✅ Done |
 | 4.7       | Payment APIs    | 5            | Trần Thanh An | 4 | ✅ Done |
 | 4.8       | Reports APIs    | 3            | Trần Thanh An | 4 | ✅ Done |
-| 4.9       | Deployment      | 5            | Trần Thanh An | 5 | 🔄 In Progress |
-| **Total** |                 | **41 SP**    |       |        | 🔄 90% |
+| 4.9       | Deployment      | 5            | Trần Thanh An | 5 | ✅ Done |
+| **Total** |                 | **41 SP**    |       |        | ✅ 100% |
 
 ---
 
@@ -114,9 +114,9 @@ Smart Restaurant System (100%) ✅ 97% Complete
 | Owner                 | Total Story Points | Percentage | Status |
 | --------------------- | ------------------ | ---------- | ------ |
 | Nguyễn Lê Thế Vinh    | ~52 SP             | 32%        | ✅ Done |
-| Trần Thanh An         | ~54 SP             | 33%        | 🔄 90% |
+| Trần Thanh An         | ~54 SP             | 33%        | ✅ Done |
 | Nguyễn Thị Ánh Ngọc   | ~56 SP             | 35%        | ✅ Done |
-| **Total**             | **162 SP**         | **100%**   | **97%** |
+| **Total**             | **162 SP**         | **100%**   | **99%** |
 
 ---
 
@@ -129,8 +129,8 @@ Smart Restaurant System (100%) ✅ 97% Complete
 | Sprint 2 | 8-12  | 35 SP        | Admin, Checkout          | ✅ Done |
 | Sprint 3 | 13-16 | 30 SP        | KDS, Waiter              | ✅ Done |
 | Sprint 4 | 17-18 | 25 SP        | Payment, Reports         | ✅ Done |
-| Sprint 5 | 19-20 | 17 SP        | Deploy, Demo             | 🔄 70% |
+| Sprint 5 | 19-20 | 17 SP        | Deploy, Demo             | 🔄 88% |
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_

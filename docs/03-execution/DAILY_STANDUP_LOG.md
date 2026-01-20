@@ -262,7 +262,7 @@
 
 ---
 
-### Day 15-16 - 16-17/01/2026 (Current)
+### Day 15-16 - 16-17/01/2026
 
 #### Vinh
 - **Yesterday:** Admin enhancements completed
@@ -286,6 +286,105 @@
 
 ---
 
+## Sprint 4: Testing & Bug Fix (Day 17-18)
+
+### Day 17 - 17/01/2026
+
+#### Vinh
+- **Yesterday:** Documentation updates
+- **Today:** E2E testing all user flows, Docker setup
+- **Commits:**
+  - `feat: Add Docker configuration for app deployment`
+  - `fix: Fix kitchen order flow with socket.io real-time updates`
+- **Blockers:** None
+
+#### An
+- **Yesterday:** Backend optimization
+- **Today:** Security review, API testing, deployment preparation
+- **Commits:**
+  - `feat: Add reward points API and fix missing dish status`
+- **Blockers:** None
+
+#### Ngọc
+- **Yesterday:** Reports complete
+- **Today:** Mobile responsiveness testing, final UI polish
+- **Blockers:** None
+
+**Team Notes:** All major bugs fixed. Application is demo-ready.
+
+---
+
+### Day 18 - 18/01/2026
+
+#### Vinh
+- **Yesterday:** Docker setup and testing
+- **Today:** VAT implementation, infinite scroll, role guard, i18n support
+- **Commits:**
+  - `feat: Add VAT (10%) breakdown to guest order detail page`
+  - `feat: implement VAT display, infinite scroll, role guard and i18n support`
+- **Blockers:** None
+
+#### An
+- **Yesterday:** Security review complete
+- **Today:** Final API testing, deployment preparation
+- **Blockers:** None
+
+#### Ngọc
+- **Yesterday:** Mobile testing complete
+- **Today:** Final QA pass, code freeze preparation
+- **Blockers:** None
+
+**Team Notes:** CODE FREEZE at 6PM. All features locked.
+
+---
+
+## Sprint 5: Deploy & Demo (Day 19-20)
+
+### Day 19 - 19/01/2026
+
+#### Vinh
+- **Yesterday:** Code freeze
+- **Today:** Demo script preparation, rehearsal
+- **Blockers:** None
+
+#### An
+- **Yesterday:** Code freeze applied
+- **Today:** Deploy backend to Render, deploy frontend to Vercel
+- **Commits:**
+  - `chore: Configure Render deployment settings`
+  - `chore: Configure Vercel deployment settings`
+- **Blockers:** None
+
+#### Ngọc
+- **Yesterday:** Final QA complete
+- **Today:** UI polish, Self-Assessment document completion
+- **Blockers:** None
+
+**Team Notes:** Deployment in progress. Backend and Frontend deployed successfully.
+
+---
+
+### Day 20 - 20/01/2026 (Current)
+
+#### Vinh
+- **Yesterday:** Demo script ready
+- **Today:** Record demo video, final documentation updates
+- **Blockers:** None
+
+#### An
+- **Yesterday:** Deployment completed
+- **Today:** Seed production data, create deployment runbook
+- **Blockers:** None
+
+#### Ngọc
+- **Yesterday:** Self-Assessment complete
+- **Today:** Assist demo recording, final verification
+- **Blockers:** None
+
+**Team Notes:** Application deployed. Demo video recording in progress.
+
+---
+
 ## Commit Summary by Developer
 
 | Developer | Total Commits | Focus Areas |
@@ -296,4 +395,4 @@
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_

@@ -9,7 +9,7 @@
 | Sprint 2 | ✅ Done | 35 SP | 100% |
 | Sprint 3 | ✅ Done | 30 SP | 100% |
 | Sprint 4 | ✅ Done | 25 SP | 100% |
-| Sprint 5 | 🔄 In Progress | 17 SP | 70% |
+| Sprint 5 | 🔄 In Progress | 17 SP | 88% |
 
 ---
 
@@ -98,15 +98,15 @@
 
 | ID | User Story | SP | Owner | Status |
 |----|------------|-------|-------|--------|
-| S5-1 | Deploy backend to production | 3 | Trần Thanh An | 🔄 In Progress |
-| S5-2 | Deploy frontend to production | 3 | Trần Thanh An | 🔄 In Progress |
+| S5-1 | Deploy backend to production | 3 | Trần Thanh An | ✅ Done |
+| S5-2 | Deploy frontend to production | 3 | Trần Thanh An | ✅ Done |
 | S5-3 | Write demo script | 2 | Nguyễn Lê Thế Vinh | ✅ Done |
 | S5-4 | Rehearse demo | 2 | All | ⏳ Planned |
 | S5-5 | Record demo video | 3 | Nguyễn Lê Thế Vinh | ⏳ Planned |
 | S5-6 | Complete Self-Assessment | 2 | All | ✅ Done |
 | S5-7 | Final documentation | 2 | All | ✅ Done |
 
-**Total:** 17 SP | **Done:** 12 SP | **Progress:** 70%
+**Total:** 17 SP | **Done:** 15 SP | **Progress:** 88%
 
 ---
 
@@ -119,10 +119,10 @@
 | 2 | 35 | 35 | 100% ✅ |
 | 3 | 30 | 30 | 100% ✅ |
 | 4 | 25 | 25 | 100% ✅ |
-| 5 | 17 | 12 | 70% 🔄 |
+| 5 | 17 | 15 | 88% 🔄 |
 
-**Total Project:** 162 SP | **Completed:** 157 SP | **Overall:** 97%
+**Total Project:** 162 SP | **Completed:** 160 SP | **Overall:** 99%
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_
