@@ -334,7 +334,8 @@ export default function TablesPage() {
 
   const getQRUrl = (table: Table) => {
     if (typeof window === "undefined") return "";
-    return `${window.location.origin}/menu/guest?table=${table.id}`;
+    if (!table.qr_token) return "QR chưa được tạo";
+    return `${window.location.origin}/menu?table=${table.id}&token=${table.qr_token}`;
   };
 
   const handleOpenEditDialog = (table: Table) => {
