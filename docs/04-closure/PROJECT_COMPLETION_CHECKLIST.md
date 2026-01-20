@@ -41,12 +41,12 @@
 
 ### 4. Deployment 🔄
 
-- [ ] Backend deployed to Render
-- [ ] Frontend deployed to Vercel
-- [ ] Database provisioned
-- [ ] Environment variables configured
-- [ ] Public URL accessible
-- [ ] SSL/HTTPS enabled
+- [x] Backend deployed to Render
+- [x] Frontend deployed to Vercel
+- [x] Database provisioned
+- [x] Environment variables configured
+- [x] Public URL accessible
+- [x] SSL/HTTPS enabled
 
 ### 5. Demo Video ⏳
 
@@ -123,7 +123,7 @@
 | Kitchen APIs | ✅ Done |
 | Payment APIs | ✅ Done |
 | Reports APIs | ✅ Done |
-| Deployment | 🔄 In Progress |
+| Deployment | ✅ Done |
 
 ---
 
@@ -157,9 +157,9 @@
 
 | Team Member | Role | Sign-off | Date |
 |-------------|------|----------|------|
-| Nguyễn Lê Thế Vinh | Team Lead | ✅ | 16/01/2026 |
-| Trần Thanh An | Backend Lead | ✅ | 16/01/2026 |
-| Nguyễn Thị Ánh Ngọc | QA Lead | ✅ | 16/01/2026 |
+| Nguyễn Lê Thế Vinh | Team Lead | ✅ | 20/01/2026 |
+| Trần Thanh An | Backend Lead | ✅ | 20/01/2026 |
+| Nguyễn Thị Ánh Ngọc | QA Lead | ✅ | 20/01/2026 |
 
 ---
 
@@ -168,10 +168,10 @@
 | Item | Status | Notes |
 |------|--------|-------|
 | GitHub Repository | ✅ Ready | https://github.com/TranAn205/smart-restaurant |
-| Public URL | 🔄 Pending | Deployment in progress |
+| Public URL | ✅ Ready | Deployed on Vercel + Render |
 | Demo Video | ⏳ Pending | To be recorded |
 | Self-Assessment | ✅ Ready | SELF_ASSESSMENT_REPORT.md |
 
 ---
 
-_Document Version: 1.0 | Last Updated: 16/01/2026_
+_Document Version: 1.1 | Last Updated: 20/01/2026_

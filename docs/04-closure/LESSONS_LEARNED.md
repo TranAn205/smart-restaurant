@@ -17,7 +17,7 @@
 | Project Duration | 20 days (03/01 - 22/01/2026) |
 | Team Size | 3 developers |
 | Total Story Points | 162 SP |
-| Completed Story Points | 157 SP (97%) |
+| Completed Story Points | 160 SP (99%) |
 | Total Commits | ~84 commits |
 
 ---
@@ -213,4 +213,4 @@ Special thanks to:
 
 ---
 
-_Document Version: 1.0 | Last Updated: 16/01/2026_
+_Document Version: 1.1 | Last Updated: 20/01/2026_

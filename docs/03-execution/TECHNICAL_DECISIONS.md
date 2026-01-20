@@ -159,7 +159,7 @@ Sử dụng **Stripe** với test mode.
 ## ADR-007: Deployment Platform
 
 **Date:** 17/01/2026  
-**Status:** 🔄 In Progress  
+**Status:** ✅ Accepted  
 **Deciders:** Trần Thanh An
 
 ### Context
@@ -253,4 +253,4 @@ Sử dụng **Recharts**.
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_

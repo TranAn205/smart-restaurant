@@ -19,7 +19,7 @@
 | Sprint 2 | 8-12  | 10-14/01 | KDS & Waiter Complete | ✅ Done |
 | Sprint 3 | 13-16 | 15-18/01 | Payment & Reports     | ✅ Done |
 | Sprint 4 | 17-18 | 19-20/01 | Testing & Bug Fix     | ✅ Done |
-| Sprint 5 | 19-20 | 21-22/01 | Deploy & Demo         | 🔄 In Progress |
+| Sprint 5 | 19-20 | 19-20/01 | Deploy & Demo         | 🔄 In Progress |
 
 ---
 
@@ -217,10 +217,10 @@
 
 | Day | Task                 | Status |
 | --- | -------------------- | ------ |
-| 19  | Deploy backend       | 🔄 In Progress |
-| 19  | Deploy frontend      | 🔄 In Progress |
-| 20  | Deployment runbook   | ⏳ Pending |
-| 20  | Seed production data | ⏳ Pending |
+| 19  | Deploy backend       | ✅ Done |
+| 19  | Deploy frontend      | ✅ Done |
+| 20  | Deployment runbook   | ✅ Done |
+| 20  | Seed production data | ✅ Done |
 
 ### Nguyễn Thị Ánh Ngọc
 
@@ -233,10 +233,10 @@
 
 **Sprint 5 Deliverables:**
 
-- 🔄 App deployed & accessible
+- ✅ App deployed & accessible
 - ⏳ Demo video recorded
 - ✅ All docs completed
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_

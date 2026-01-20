@@ -80,7 +80,7 @@
 | Action | Owner | Status |
 |--------|-------|--------|
 | Fix PDF encoding (use ASCII) | Nguyễn Thị Ánh Ngọc | ✅ Done |
-| Start deployment prep | Trần Thanh An | 🔄 In Progress |
+| Start deployment prep | Trần Thanh An | ✅ Done |
 | Optimize slow queries | Trần Thanh An | ✅ Done |
 
 ---
@@ -137,7 +137,7 @@
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Story Points Completed | 162 SP | 157 SP (97%) |
+| Story Points Completed | 162 SP | 160 SP (99%) |
 | Features Delivered | 100% MVP | 100% MVP |
 | Critical Bugs | 0 | 0 |
 | Code Review Coverage | 100% | 100% |
@@ -161,4 +161,4 @@
 
 ---
 
-_Document Version: 1.0 | Last Updated: 16/01/2026_
+_Document Version: 1.1 | Last Updated: 20/01/2026_

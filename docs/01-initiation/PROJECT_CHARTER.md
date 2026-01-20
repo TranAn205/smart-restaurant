@@ -115,10 +115,10 @@
 
 | Role            | Name                   | Student ID | Date       |
 | --------------- | ---------------------- | ---------- | ---------- |
-| Project Manager | Nguyễn Lê Thế Vinh     | 23120190   | 16/01/2026 |
-| Team Member     | Trần Thanh An          | 23120017   | 16/01/2026 |
-| Team Member     | Nguyễn Thị Ánh Ngọc    | 23120061   | 16/01/2026 |
+| Project Manager | Nguyễn Lê Thế Vinh     | 23120190   | 20/01/2026 |
+| Team Member     | Trần Thanh An          | 23120017   | 20/01/2026 |
+| Team Member     | Nguyễn Thị Ánh Ngọc    | 23120061   | 20/01/2026 |
 
 ---
 
-_Document Version: 1.1 | Last Updated: 16/01/2026_
+_Document Version: 1.2 | Last Updated: 20/01/2026_
