@@ -39,6 +39,7 @@ const usersRouter = require("./routes/users");
 const customerRouter = require("./routes/customer");
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy - fix for X-Forwarded-For header
 const server = http.createServer(app);
 
 initSocket(server);
